@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+
 <Shell
     x:Class="QuizBattle.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:QuizBattle"
-    Title="QuizBattle">
+    xmlns:local="clr-namespace:QuizBattle">
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Quiz Battle"
+        ContentTemplate="{DataTemplate local:MainMenu}"
+        Route="MainMenu" />
 
 </Shell>

@@ -34,11 +34,33 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
 
+        await StartBattle();
+    }
+
+    private async Task StartBattle()
+    {
         QuestionLoader loader = new QuestionLoader();
 
         battleQuestions = await loader.LoadQuestionsAsync("QuestionList.txt");
 
         bossHP = battleQuestions.Count;
+
+        playerLives = 5;
+
+        currentQuestion = null;
+
+        AnswerEntry.IsEnabled = true;
+
+        AnswerEntry.Text = string.Empty;
+
+        ResultLabel.Text = string.Empty;
+
+        selectedOptions.Clear();
+
+        foreach (Button button in optionButtons)
+        {
+            button.BackgroundColor = defaultOptionColor;
+        }
 
         UpdateLabels();
 
@@ -209,22 +231,76 @@ public partial class MainPage : ContentPage
 
         if (playerLives <= 0)
         {
-            await DisplayAlert("Game Over", "You lost!", "OK");
+            bool retry = await DisplayAlert(
+                "Game Over!",
+                "Would you like to retry?",
+                "Retry",
+                "Leave");
 
-            AnswerEntry.IsEnabled = false;
+            if (retry)
+            {
+                await StartBattle();
+            }
+            else
+            {
+                bool confirm = await DisplayAlert(
+                    "Admit defeat for now?",
+                    "",
+                    "Yes",
+                    "No");
+
+                if (confirm)
+                {
+                    await Shell.Current.GoToAsync("//MainMenu");
+                }
+                else
+                {
+                    await StartBattle();
+                }
+            }
 
             return;
         }
 
         if (bossHP <= 0)
         {
-            await DisplayAlert("Victory", "You defeated the boss!", "OK");
+            bool retry = await DisplayAlert(
+                 "Victory!",
+                 "Play again?",
+                 "Retry",
+                 "Main Menu");
 
-            AnswerEntry.IsEnabled = false;
+            if (retry)
+            {
+                await StartBattle();
+            }
+            else
+            {
+                await Shell.Current.GoToAsync("//MainMenu");
+            }
 
             return;
         }
 
         NextQuestion();
+    }
+
+    protected override bool OnBackButtonPressed()
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            bool confirm = await DisplayAlert(
+                "Battle in Progress!",
+                "Confirm return to menu?",
+                "Yes",
+                "No");
+
+            if (confirm)
+            {
+                await Shell.Current.GoToAsync("//MainMenu");
+            }
+        });
+
+        return true;
     }
 }

@@ -8,7 +8,15 @@ namespace QuizBattle.Services
         {
             List<Question> questions = new List<Question>();
 
-            using Stream stream = await FileSystem.OpenAppPackageFileAsync(fileName);
+            string filePath = Path.Combine(FileSystem.Current.AppDataDirectory, fileName);
+
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException(
+                    $"'{fileName}' was not found in AppDataDirectory.");
+            }
+
+            using Stream stream = File.OpenRead(filePath);
             using StreamReader reader = new StreamReader(stream);
 
             while (!reader.EndOfStream)

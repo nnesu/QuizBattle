@@ -60,10 +60,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Data\QuestionList.txt" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 	</ItemGroup>
@@ -73,13 +69,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiAsset Include="Data\QuestionList.txt" />
-	</ItemGroup>
-
-	<ItemGroup>
+	  <Compile Update="Source Material.xaml.cs">
+	    <DependentUpon>Source Material.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="MainMenu.xaml.cs">
+	    <DependentUpon>MainMenu.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="MainPage.xaml.cs">
 	    <DependentUpon>MainPage.xaml</DependentUpon>
 	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="Source Material.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="MainMenu.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 
 </Project>
