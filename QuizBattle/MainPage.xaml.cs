@@ -36,7 +36,7 @@ public partial class MainPage : ContentPage
 
         QuestionLoader loader = new QuestionLoader();
 
-        battleQuestions = await loader.LoadQuestionsAsync("Data/QuestionList.txt");
+        battleQuestions = await loader.LoadQuestionsAsync("QuestionList.txt");
 
         bossHP = battleQuestions.Count;
 
