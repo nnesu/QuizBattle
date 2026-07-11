@@ -1,5 +1,6 @@
 ﻿Identification|What is 2 + 2?|4
 Identification|Capital of France?|Paris
+Identification|Capital of the Philippines?|Manila
 Identification|Largest planet?|Jupiter
 Identification|What color is the sky on a clear day?|Blue
 Identification|5 x 6?|30
