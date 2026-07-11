@@ -15,6 +15,17 @@
         <Label
             x:Name="LivesLabel"
             FontSize="22" />
+		
+		<Label
+            x:Name="MasteryLabel"
+            Text="Mastery: 0 / 1"
+            FontSize="18" />
+
+		<Label
+            x:Name="TimeLabel"
+            Text="Time: --"
+            FontSize="18"
+            HorizontalOptions="Center"/>
 
         <Label
             x:Name="QuestionLabel"

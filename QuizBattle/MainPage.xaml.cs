@@ -10,12 +10,16 @@ public partial class MainPage : ContentPage
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
     private int bossHP;
-    private int playerLives = 5;
-    private const int CorrectAnswersRequired = 1;
+
+    private int playerLives;
+
     private HashSet<string> selectedOptions = new HashSet<string>();    
     private Button[] optionButtons = Array.Empty<Button>();
     private readonly Color defaultOptionColor = Colors.LightGray;
     private readonly Color selectedOptionColor = Colors.Green;
+
+    private IDispatcherTimer? battleTimer;
+    private int timeRemaining;
 
     public MainPage()
     {
@@ -34,21 +38,193 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
 
+        await StartBattle();
+    }
+
+    private async void BattleTimerTick(object? sender, EventArgs e)
+    {
+        timeRemaining--;
+
+        UpdateTimerLabel();
+
+        if (timeRemaining > 0)
+        {
+            return;
+        }
+
+        await HandleDefeat(
+            "Time's Up!",
+            "You ran out of time.");
+    }
+
+    private async Task StartBattle()
+    {
+        AnswerEntry.IsEnabled = true;
+
+        foreach (Button button in optionButtons)
+        {
+            button.IsEnabled = true;
+        }
+
         QuestionLoader loader = new QuestionLoader();
 
         battleQuestions = await loader.LoadQuestionsAsync("QuestionList.txt");
 
         bossHP = battleQuestions.Count;
 
+        playerLives = GameSettings.PlayerLives;
+
+        currentQuestion = null;
+
+        AnswerEntry.Text = string.Empty;
+
+        ResultLabel.Text = string.Empty;
+
+        selectedOptions.Clear();
+
+        foreach (Button button in optionButtons)
+        {
+            button.BackgroundColor = defaultOptionColor;
+        }
+
         UpdateLabels();
+
+        MasteryLabel.Text = string.Empty;
+
+        if (battleTimer != null)
+        {
+            battleTimer.Stop();
+            battleTimer.Tick -= BattleTimerTick;
+        }
+
+        timeRemaining = GameSettings.TimeLimitSeconds;
+
+        UpdateTimerLabel();
+
+        if (GameSettings.TimeLimitSeconds != -1)
+        {
+            battleTimer = Dispatcher.CreateTimer();
+
+            battleTimer.Interval = TimeSpan.FromSeconds(1);
+
+            battleTimer.Tick += BattleTimerTick;
+
+            battleTimer.Start();
+        }
 
         NextQuestion();
     }
 
+    private async Task HandleDefeat(string title, string message)
+    {
+        AnswerEntry.IsEnabled = false;
+
+        foreach (Button button in optionButtons)
+        {
+            button.IsEnabled = false;
+        }
+
+        battleTimer?.Stop();
+
+        bool retry = await DisplayAlert(
+            title,
+            message,
+            "Retry",
+            "Leave");
+
+        if (retry)
+        {
+            await StartBattle();
+        }
+        else
+        {
+            bool confirm = await DisplayAlert(
+                "Admit defeat for now?",
+                "",
+                "Yes",
+                "No");
+
+            if (confirm)
+            {
+                await Shell.Current.GoToAsync("//MainMenu");
+            }
+            else
+            {
+                await StartBattle();
+            }
+        }
+    }
+
+    private async Task HandleVictory()
+    {
+        AnswerEntry.IsEnabled = false;
+
+        foreach (Button button in optionButtons)
+        {
+            button.IsEnabled = false;
+        }
+
+        battleTimer?.Stop();
+
+        bool retry = await DisplayAlert(
+            "Victory!",
+            "Play again?",
+            "Retry",
+            "Main Menu");
+
+        if (retry)
+        {
+            await StartBattle();
+        }
+        else
+        {
+            await Shell.Current.GoToAsync("//MainMenu");
+        }
+    }
+
+    //This is for health indicators only
     private void UpdateLabels()
     {
         BossLabel.Text = $"Boss HP: {bossHP}";
-        LivesLabel.Text = $"Lives: {playerLives}";
+
+        if (GameSettings.IsZenMode)
+        {
+            LivesLabel.Text = "Lives: ∞";
+            // or:
+            // LivesLabel.IsVisible = false;
+        }
+        else
+        {
+            LivesLabel.Text = $"Lives: {playerLives}";
+            // LivesLabel.IsVisible = true;
+        }
+    }
+
+    //Needed for medium and hard difficulty
+    //where a question needs to be answered correctly more than once before it gets counted
+    private void UpdateMasteryLabel()
+    {
+        if (currentQuestion == null)
+        {
+            MasteryLabel.Text = string.Empty;
+            return;
+        }
+
+        MasteryLabel.Text =
+            $"Question Mastery: {currentQuestion.CorrectProgress} / {GameSettings.CorrectAnswersRequired}";
+    }
+
+    private void UpdateTimerLabel()
+    {
+        if (GameSettings.TimeLimitSeconds == -1)
+        {
+            TimeLabel.Text = "Time: ∞";
+            return;
+        }
+
+        TimeSpan time = TimeSpan.FromSeconds(timeRemaining);
+
+        TimeLabel.Text = $"Time: {time:mm\\:ss}";
     }
 
     private void NextQuestion()
@@ -94,6 +270,8 @@ public partial class MainPage : ContentPage
         ResultLabel.Text = string.Empty;
 
         QuestionLabel.Text = currentQuestion.Text;
+
+        UpdateMasteryLabel();
 
         // Display the appropriate input controls
         if (currentQuestion.Type == QuestionType.Identification)
@@ -186,13 +364,13 @@ public partial class MainPage : ContentPage
             ResultLabel.Text = "Correct!";
 
             currentQuestion.TimesCorrect++;
-
             currentQuestion.CorrectProgress++;
 
-            bossHP--;
+            UpdateMasteryLabel();
 
-            if (currentQuestion.CorrectProgress >= CorrectAnswersRequired)
+            if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
+                bossHP--;
                 battleQuestions.Remove(currentQuestion);
             }
         }
@@ -202,29 +380,52 @@ public partial class MainPage : ContentPage
 
             currentQuestion.TimesIncorrect++;
 
-            playerLives--;
+            if (!GameSettings.IsZenMode)
+            {
+                playerLives--;
+            }
         }
 
         UpdateLabels();
 
         if (playerLives <= 0)
         {
-            await DisplayAlert("Game Over", "You lost!", "OK");
-
-            AnswerEntry.IsEnabled = false;
+            await HandleDefeat(
+                "Game Over!",
+                "You ran out of lives.");
 
             return;
         }
 
         if (bossHP <= 0)
         {
-            await DisplayAlert("Victory", "You defeated the boss!", "OK");
-
-            AnswerEntry.IsEnabled = false;
-
+            await HandleVictory();
             return;
         }
 
+        await Task.Delay(1000);
         NextQuestion();
     }
+
+
+    protected override bool OnBackButtonPressed()
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            bool confirm = await DisplayAlert(
+                "Battle in Progress!",
+                "Confirm return to menu?",
+                "Yes",
+                "No");
+
+            if (confirm)
+            {
+                await Shell.Current.GoToAsync("//MainMenu");
+            }
+        });
+
+        return true;
+    }
+
+
 }
