@@ -1,0 +1,7 @@
+﻿Identification|What is 2 + 2?|4
+Identification|Capital of France?|Paris
+Identification|Largest planet?|Jupiter
+Identification|What color is the sky on a clear day?|Blue
+Identification|5 x 6?|30
+MultipleChoice|Which number is even?|3|5|8|9|ANS|8
+MultipleChoice|Which are prime numbers?|2|3|4|5|ANS|2|3|5

@@ -1,0 +1,25 @@
+﻿Battlebuilder:
+
+First, it needs to shuffle question options for multiple choice, but eventually it will be used for the following:
+
+
+> Before a battle begins, players should be able to choose which boss they want to battlee, 
+meaning they choose between various question lists in teh data folder. 
+Battlebuilder will select the correct list. (like a dvd player playing whatever disc is inserted)
+
+> I want to implement this system. Let's say question list has 50 questions. a battle's length would vary
+easy = 10 questions
+medium = 15 questions
+hard = 20 questions
+
+once a battle is finished, regardless of the outcome, the game should save player progress so that future battles prioritize 
+questions that haven't been asked yet, questions that the player got wrong before, and questions that the player got right 
+to make sure player remembers
+
+
+Main Menu:
+
+> Choose a boss to battle (aka, choose whch question list to study)
+> Manage boss options (aka, add/delete question lists)
+
+I'll add extra question lists to the Data folder, and players should be able to choose which list they want to use.

@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="QuizBattle.MainPage">
+
+    <VerticalStackLayout
+        Padding="20"
+        Spacing="10">
+
+        <Label
+            x:Name="BossLabel"
+            FontSize="22" />
+
+        <Label
+            x:Name="LivesLabel"
+            FontSize="22" />
+
+        <Label
+            x:Name="QuestionLabel"
+            FontSize="20" />
+
+        <!-- Identification / FillBlank -->
+        <Entry
+            x:Name="AnswerEntry"
+            Placeholder="Type your answer" />
+
+        <!-- Multiple Choice -->
+        <VerticalStackLayout
+            x:Name="MultipleChoiceLayout"
+            IsVisible="False"
+            Spacing="8">
+
+            <Button
+                x:Name="OptionButton1"
+                Clicked="OptionClicked" />
+
+            <Button
+                x:Name="OptionButton2"
+                Clicked="OptionClicked" />
+
+            <Button
+                x:Name="OptionButton3"
+                Clicked="OptionClicked" />
+
+            <Button
+                x:Name="OptionButton4"
+                Clicked="OptionClicked" />
+
+        </VerticalStackLayout>
+
+        <Button
+            Text="Submit"
+            Clicked="SubmitAnswer" />
+
+        <Label
+            x:Name="ResultLabel"
+            FontSize="18" />
+
+    </VerticalStackLayout>
+
+</ContentPage>
