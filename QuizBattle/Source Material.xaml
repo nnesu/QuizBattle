@@ -20,6 +20,13 @@
             AutoSize="TextChanges"
             Placeholder="Paste your notes here..." />
 
+        <Label Text="Maximum Questions"/>
+
+        <Entry
+            x:Name="QuestionLimitEntry"
+            Keyboard="Numeric"
+            Text="20"/>
+
         <Button
             Text="Start Quiz"
             Clicked="StartQuizClicked" />

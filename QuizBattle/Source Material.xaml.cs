@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using QuizBattle.Models;
 
 namespace QuizBattle;
 
@@ -21,9 +22,28 @@ public partial class SourceMaterial : ContentPage
             return;
         }
 
+        int maxQuestions = 20; //default number of questions
+
+        if (!string.IsNullOrWhiteSpace(QuestionLimitEntry.Text))
+        {
+            if (!int.TryParse(QuestionLimitEntry.Text, out maxQuestions) ||
+                maxQuestions < 10 ||
+                maxQuestions > 50)
+            {
+                await DisplayAlert(
+                    "Invalid Number of Questions",
+                    "The number of questions must be between 10 and 50.",
+                    "OK");
+
+                return;
+            }
+        }
+
+        GameSettings.MaxQuestions = maxQuestions;
+
         string filePath = Path.Combine(
-            FileSystem.Current.AppDataDirectory,
-            "QuestionList.txt");
+                FileSystem.Current.AppDataDirectory,
+                "QuestionList.txt");
 
         File.WriteAllText(
             filePath,
