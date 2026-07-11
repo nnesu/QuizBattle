@@ -29,7 +29,7 @@ public partial class MainMenu : ContentPage
         {
             case "Zen":
                 GameSettings.IsZenMode = true;
-                GameSettings.PlayerLives = int.MaxValue;
+                GameSettings.PlayerLives = 1; //in zen mode player can't lose lives, so any positive value works here
                 GameSettings.CorrectAnswersRequired = 1;
                 GameSettings.TimeLimitSeconds = -1;
                 break;

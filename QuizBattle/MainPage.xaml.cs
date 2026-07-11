@@ -186,7 +186,18 @@ public partial class MainPage : ContentPage
     private void UpdateLabels()
     {
         BossLabel.Text = $"Boss HP: {bossHP}";
-        LivesLabel.Text = $"Lives: {playerLives}";
+
+        if (GameSettings.IsZenMode)
+        {
+            LivesLabel.Text = "Lives: ∞";
+            // or:
+            // LivesLabel.IsVisible = false;
+        }
+        else
+        {
+            LivesLabel.Text = $"Lives: {playerLives}";
+            // LivesLabel.IsVisible = true;
+        }
     }
 
     //Needed for medium and hard difficulty
@@ -369,7 +380,10 @@ public partial class MainPage : ContentPage
 
             currentQuestion.TimesIncorrect++;
 
-            playerLives--;
+            if (!GameSettings.IsZenMode)
+            {
+                playerLives--;
+            }
         }
 
         UpdateLabels();
