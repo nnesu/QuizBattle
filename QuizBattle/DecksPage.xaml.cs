@@ -16,6 +16,18 @@ public partial class DecksPage : ContentPage
         LoadDecks();
     }
 
+    private async void OnUniversalBackClicked(object? sender, EventArgs e)
+    {
+        if (Navigation.NavigationStack.Count > 1)
+        {
+            await Navigation.PopAsync();
+        }
+        else
+        {
+            await Shell.Current.GoToAsync("//MainMenu");
+        }
+    }
+
     private void LoadDecks()
     {
         DecksGrid.Children.Clear();
@@ -31,7 +43,7 @@ public partial class DecksPage : ContentPage
             string name = Path.GetFileNameWithoutExtension(file);
             var btn = new Button
             {
-                Text = name,
+                Text = name.ToUpper(),
                 HeightRequest = 100,
                 BackgroundColor = Color.FromArgb("#264653"),
                 TextColor = Colors.White,
@@ -48,7 +60,14 @@ public partial class DecksPage : ContentPage
         }
 
         if (col == 0) DecksGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var addBtn = new Button { Text = "+ New Deck", HeightRequest = 100, BackgroundColor = Color.FromArgb("#444"), TextColor = Colors.White };
+        var addBtn = new Button
+        {
+            Text = "+ NEW DECK",
+            HeightRequest = 100,
+            BackgroundColor = Color.FromArgb("#444"),
+            TextColor = Colors.White,
+            FontAttributes = FontAttributes.Bold
+        };
         addBtn.Clicked += OnAddNewDeckClicked;
         Grid.SetRow(addBtn, row);
         Grid.SetColumn(addBtn, col);
@@ -58,7 +77,7 @@ public partial class DecksPage : ContentPage
     private void ViewDeck(string deckName)
     {
         _currentDeck = deckName;
-        DeckTitleLabel.Text = deckName;
+        DeckTitleLabel.Text = deckName.ToUpper();
         DecksView.IsVisible = false;
         CardsView.IsVisible = true;
         LoadCards();
@@ -91,27 +110,20 @@ public partial class DecksPage : ContentPage
             if (col == 0) CardsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
             int currentLineIndex = i;
-            string cardText = parts[1];
+            string rawLineText = lines[i];
+            string questionDisplay = parts[1];
 
             var cardBtn = new Button
             {
-                Text = $"[{parts[0]}]\n{cardText}",
+                Text = $"[{parts[0].ToUpper()}]\n{questionDisplay}",
                 HeightRequest = 90,
                 FontSize = 12,
                 BackgroundColor = Color.FromArgb("#1D3557"),
-                TextColor = Colors.White
+                TextColor = Colors.White,
+                FontAttributes = FontAttributes.Bold
             };
 
-            cardBtn.Clicked += async (s, e) => {
-                bool confirm = await DisplayAlert("Delete Card", "Delete this specific card layout line?", "Yes", "No");
-                if (confirm)
-                {
-                    var updatedLines = File.ReadAllLines(path).ToList();
-                    updatedLines.RemoveAt(currentLineIndex);
-                    File.WriteAllLines(path, updatedLines, Encoding.UTF8);
-                    LoadCards();
-                }
-            };
+            cardBtn.Clicked += (s, e) => OpenEditCardPopup(currentLineIndex, rawLineText);
 
             Grid.SetRow(cardBtn, row);
             Grid.SetColumn(cardBtn, col);
@@ -122,9 +134,105 @@ public partial class DecksPage : ContentPage
         }
     }
 
+    private void OpenEditCardPopup(int lineIndex, string currentRawText)
+    {
+        var label = new Label { Text = "EDIT CARD FORMAT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+        var editor = new Editor { Text = currentRawText, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White };
+
+        var saveBtn = new Button { Text = "SAVE CHANGES", BackgroundColor = Color.FromArgb("#2A9D8F"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+        var deleteBtn = new Button { Text = "DELETE", BackgroundColor = Color.FromArgb("#E63946"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+
+        string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
+
+        saveBtn.Clicked += async (s, ev) => {
+            string updatedText = editor.Text?.Trim() ?? "";
+
+            if (!ValidateCardFormat(updatedText, out string errorMsg))
+            {
+                await DisplayAlert("INVALID FORMAT", errorMsg, "OK");
+                return;
+            }
+
+            var fileLines = File.ReadAllLines(path).ToList();
+            if (lineIndex >= 0 && lineIndex < fileLines.Count)
+            {
+                fileLines[lineIndex] = updatedText;
+                File.WriteAllLines(path, fileLines, Encoding.UTF8);
+            }
+
+            PopupBackground.IsVisible = false;
+            LoadCards();
+        };
+
+        deleteBtn.Clicked += (s, ev) => {
+            var fileLines = File.ReadAllLines(path).ToList();
+            if (lineIndex >= 0 && lineIndex < fileLines.Count)
+            {
+                fileLines.RemoveAt(lineIndex);
+                File.WriteAllLines(path, fileLines, Encoding.UTF8);
+            }
+
+            PopupBackground.IsVisible = false;
+            LoadCards();
+        };
+
+        var btnGrid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection { new ColumnDefinition { Width = GridLength.Star }, new ColumnDefinition { Width = GridLength.Star } }, ColumnSpacing = 10 };
+        btnGrid.Children.Add(deleteBtn); Grid.SetColumn(deleteBtn, 0);
+        btnGrid.Children.Add(saveBtn); Grid.SetColumn(saveBtn, 1);
+
+        var layout = new VerticalStackLayout { Spacing = 10 };
+        layout.Children.Add(label);
+        layout.Children.Add(editor);
+        layout.Children.Add(btnGrid);
+
+        ShowPopup(layout);
+    }
+
+    private bool ValidateCardFormat(string rawText, out string errorMessage)
+    {
+        errorMessage = "";
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            errorMessage = "Card text cannot be empty.";
+            return false;
+        }
+
+        string[] parts = rawText.Split('|');
+        if (parts.Length < 3)
+        {
+            errorMessage = "Invalid card syntax! At least 3 pipe-separated parameters required.\n\nExample:\nIdentification|Question|Answer";
+            return false;
+        }
+
+        string type = parts[0].Trim();
+        if (!type.Equals("Identification", StringComparison.OrdinalIgnoreCase) &&
+            !type.Equals("MultipleChoice", StringComparison.OrdinalIgnoreCase))
+        {
+            errorMessage = "Invalid question type! Must start with 'Identification' or 'MultipleChoice'.";
+            return false;
+        }
+
+        if (type.Equals("MultipleChoice", StringComparison.OrdinalIgnoreCase))
+        {
+            int ansIndex = Array.IndexOf(parts, "ANS");
+            if (ansIndex == -1)
+            {
+                errorMessage = "Multiple Choice format error! Must contain '|ANS|' delimiter before correct answer.\n\nExample:\nMultipleChoice|Q|Opt1|Opt2|Opt3|Opt4|ANS|CorrectAnswer";
+                return false;
+            }
+            if (parts.Length < 8)
+            {
+                errorMessage = "Multiple Choice format error! Missing options or answer parameter.\n\nExpected:\nMultipleChoice|Q|Opt1|Opt2|Opt3|Opt4|ANS|CorrectAnswer";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public async void OnAddNewDeckClicked(object? sender, EventArgs e)
     {
-        string name = await DisplayPromptAsync("New Deck", "Enter deck filename title:", "Create", "Cancel");
+        string name = await DisplayPromptAsync("NEW DECK", "Enter deck filename title:", "CREATE", "CANCEL");
         if (!string.IsNullOrWhiteSpace(name))
         {
             string path = Path.Combine(_decksFolder, $"{name.Trim()}.txt");
@@ -135,7 +243,7 @@ public partial class DecksPage : ContentPage
 
     private async void OnRenameDeckClicked(object? sender, EventArgs e)
     {
-        string newName = await DisplayPromptAsync("Rename Deck", "Enter a new name:", "Save", "Cancel", initialValue: _currentDeck);
+        string newName = await DisplayPromptAsync("RENAME DECK", "Enter a new name:", "SAVE", "CANCEL", initialValue: _currentDeck);
         if (!string.IsNullOrWhiteSpace(newName) && newName != _currentDeck)
         {
             string oldPath = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
@@ -150,7 +258,7 @@ public partial class DecksPage : ContentPage
 
     private async void OnDeleteDeckClicked(object? sender, EventArgs e)
     {
-        bool confirm = await DisplayAlert("Delete Deck", $"Permanently delete '{_currentDeck}'?", "Yes", "No");
+        bool confirm = await DisplayAlert("DELETE DECK", $"Permanently delete '{_currentDeck}'?", "YES", "NO");
         if (confirm)
         {
             string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
@@ -170,13 +278,13 @@ public partial class DecksPage : ContentPage
 
     private void OpenGenerateCardsPopup(object? sender, EventArgs e)
     {
-        var label = new Label { Text = "Paste Material Notes:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+        var label = new Label { Text = "PASTE MATERIAL NOTES:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         var editor = new Editor { HeightRequest = 180, BackgroundColor = Colors.Black, TextColor = Colors.White };
-        var btn = new Button { Text = "Generate API", BackgroundColor = Color.FromArgb("#2A9D8F"), TextColor = Colors.White };
+        var btn = new Button { Text = "GENERATE API", BackgroundColor = Color.FromArgb("#2A9D8F"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
 
         btn.Clicked += async (s, ev) => {
             if (string.IsNullOrWhiteSpace(editor.Text)) return;
-            btn.IsEnabled = false; btn.Text = "Running...";
+            btn.IsEnabled = false; btn.Text = "RUNNING...";
             try
             {
                 string res = await _aiService.GenerateQuestionsAsync(editor.Text, 10);
@@ -185,7 +293,7 @@ public partial class DecksPage : ContentPage
                 PopupBackground.IsVisible = false;
                 LoadCards();
             }
-            catch (Exception ex) { await DisplayAlert("Error", ex.Message, "OK"); }
+            catch (Exception ex) { await DisplayAlert("ERROR", ex.Message, "OK"); }
         };
 
         var layout = new VerticalStackLayout { Spacing = 10 };
@@ -195,17 +303,16 @@ public partial class DecksPage : ContentPage
 
     private void OpenCreateCardPopup(object? sender, EventArgs e)
     {
-        var label = new Label { Text = "Add Custom Card Manually", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+        var label = new Label { Text = "ADD CUSTOM CARD MANUALLY", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         var example = new Label { Text = "Format examples:\nIdentification|Question|Answer\nMultipleChoice|Q|Opt1|Opt2|Opt3|Opt4|ANS|Opt1", TextColor = Colors.Gray, FontSize = 11 };
         var editor = new Editor { HeightRequest = 80, BackgroundColor = Colors.Black, TextColor = Colors.White, Placeholder = "Type here..." };
-        var btn = new Button { Text = "Create", BackgroundColor = Color.FromArgb("#457B9D") };
+        var btn = new Button { Text = "CREATE", BackgroundColor = Color.FromArgb("#457B9D"), FontAttributes = FontAttributes.Bold };
 
-        btn.Clicked += (s, ev) => {
+        btn.Clicked += async (s, ev) => {
             string raw = editor.Text?.Trim() ?? "";
-            var tokens = raw.Split('|');
-            if (tokens.Length < 3 || (!tokens[0].Equals("Identification") && !tokens[0].Equals("MultipleChoice")))
+            if (!ValidateCardFormat(raw, out string err))
             {
-                DisplayAlert("Validation Blocked", "Line format does not conform to required syntax:\nType|Question|Answer...", "Fix");
+                await DisplayAlert("VALIDATION ERROR", err, "OK");
                 return;
             }
             string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
@@ -221,9 +328,9 @@ public partial class DecksPage : ContentPage
 
     private void OpenImportPopup(object? sender, EventArgs e)
     {
-        var label = new Label { Text = "Import Deck Data Text:", TextColor = Colors.White };
+        var label = new Label { Text = "IMPORT DECK DATA TEXT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         var editor = new Editor { HeightRequest = 180, BackgroundColor = Colors.Black, TextColor = Colors.White };
-        var btn = new Button { Text = "Merge / Save", BackgroundColor = Color.FromArgb("#A8DADC") };
+        var btn = new Button { Text = "MERGE / SAVE", BackgroundColor = Color.FromArgb("#A8DADC"), TextColor = Color.FromArgb("#1D3557"), FontAttributes = FontAttributes.Bold };
 
         btn.Clicked += (s, ev) => {
             if (string.IsNullOrWhiteSpace(editor.Text)) return;
@@ -243,9 +350,9 @@ public partial class DecksPage : ContentPage
         string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
         string contents = File.Exists(path) ? File.ReadAllText(path) : "";
 
-        var label = new Label { Text = "Export Deck Text:", TextColor = Colors.White };
+        var label = new Label { Text = "EXPORT DECK TEXT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         var editor = new Editor { Text = contents, IsReadOnly = true, HeightRequest = 180, BackgroundColor = Colors.Black, TextColor = Colors.White };
-        var btn = new Button { Text = "Copy to Clipboard", BackgroundColor = Color.FromArgb("#1D3557") };
+        var btn = new Button { Text = "COPY TO CLIPBOARD", BackgroundColor = Color.FromArgb("#1D3557"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
 
         btn.Clicked += async (s, ev) => {
             await Clipboard.Default.SetTextAsync(contents);
