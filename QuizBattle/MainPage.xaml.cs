@@ -7,6 +7,7 @@ namespace QuizBattle;
 public partial class MainPage : ContentPage
 {
     private readonly Random random = new();
+    private readonly List<Question>? loadedQuestions;
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
     private int bossHP;
@@ -16,8 +17,8 @@ public partial class MainPage : ContentPage
 
     private HashSet<string> selectedOptions = new HashSet<string>();
     private Button[] optionButtons = Array.Empty<Button>();
-    private readonly Color defaultOptionColor = Colors.LightGray;
-    private readonly Color selectedOptionColor = Colors.Green;
+    private readonly Color defaultOptionColor = Color.FromArgb("#1A2644");
+    private readonly Color selectedOptionColor = Color.FromArgb("#0F766E");
 
     private IDispatcherTimer? battleTimer;
     private int timeRemaining;
@@ -27,11 +28,15 @@ public partial class MainPage : ContentPage
     private readonly double heartMaxSize = 48;
     private readonly double heartSpacing = 4;
 
-    private bool heartSizeLocked = false;
+    public MainPage() : this(null)
+    {
+    }
 
-    public MainPage()
+    public MainPage(IEnumerable<Question>? questions)
     {
         InitializeComponent();
+
+        loadedQuestions = questions?.Select(CloneQuestion).ToList();
 
         optionButtons = new Button[]
         {
@@ -54,13 +59,9 @@ public partial class MainPage : ContentPage
         double candidate = availableWidth / startingLives;
         double computed = Math.Clamp(candidate, heartMinSize, heartMaxSize);
 
-        if (heartSizeLocked)
-            return;
-
         if (Math.Abs(computed - heartSize) > 0.5)
         {
             heartSize = computed;
-            heartSizeLocked = true;
             UpdateLivesDisplay();
         }
     }
@@ -96,19 +97,26 @@ public partial class MainPage : ContentPage
             button.IsEnabled = true;
         }
 
-        QuestionLoader loader = new QuestionLoader();
-        string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
-            ? "QuestionList.txt"
-            : GameSettings.SelectedDeckName;
+        if (loadedQuestions != null)
+        {
+            // The setup page already validated and loaded this deck. Reusing it avoids a
+            // second database read that could leave the battle page waiting indefinitely.
+            battleQuestions = loadedQuestions.Select(CloneQuestion).ToList();
+        }
+        else
+        {
+            QuestionLoader loader = new QuestionLoader();
+            string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
+                ? "QuestionList.txt"
+                : GameSettings.SelectedDeckName;
 
-        battleQuestions = await loader.LoadQuestionsAsync(deckFile);
+            battleQuestions = await loader.LoadQuestionsAsync(deckFile);
+        }
 
         bossHP = 5;
 
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
-
-        heartSizeLocked = false;
 
         currentQuestion = null;
         AnswerEntry.Text = string.Empty;
@@ -141,6 +149,22 @@ public partial class MainPage : ContentPage
             LivesLayout_SizeChanged(LivesLayout, EventArgs.Empty);
 
         NextQuestion();
+    }
+
+    private static Question CloneQuestion(Question source)
+    {
+        return new Question
+        {
+            Text = source.Text,
+            Type = source.Type,
+            Options = new List<string>(source.Options),
+            CorrectAnswers = new List<string>(source.CorrectAnswers),
+            TimesAsked = source.TimesAsked,
+            TimesCorrect = source.TimesCorrect,
+            TimesIncorrect = source.TimesIncorrect,
+            CorrectProgress = source.CorrectProgress,
+            IsCompleted = source.IsCompleted
+        };
     }
 
     // handle defeat dialog

@@ -33,9 +33,13 @@ public partial class DecksPage : ContentPage
             {
                 Text = deck.Name.ToUpper(),
                 HeightRequest = 100,
-                BackgroundColor = Color.FromArgb("#264653"),
-                TextColor = Colors.White,
-                FontAttributes = FontAttributes.Bold
+                BackgroundColor = Color.FromArgb("#17274A"),
+                TextColor = Color.FromArgb("#F1F5F9"),
+                BorderColor = Color.FromArgb("#36507A"),
+                BorderWidth = 1,
+                CornerRadius = 18,
+                FontAttributes = FontAttributes.Bold,
+                FontSize = 14
             };
             btn.Clicked += (s, e) => ViewDeck(deck);
 
@@ -52,9 +56,13 @@ public partial class DecksPage : ContentPage
         {
             Text = "+ NEW DECK",
             HeightRequest = 100,
-            BackgroundColor = Color.FromArgb("#444"),
-            TextColor = Colors.White,
-            FontAttributes = FontAttributes.Bold
+            BackgroundColor = Color.FromArgb("#24234A"),
+            TextColor = Color.FromArgb("#C4B5FD"),
+            BorderColor = Color.FromArgb("#585093"),
+            BorderWidth = 1,
+            CornerRadius = 18,
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 14
         };
         addBtn.Clicked += OnAddNewDeckClicked;
         Grid.SetRow(addBtn, row);
@@ -78,6 +86,11 @@ public partial class DecksPage : ContentPage
         LoadDecks();
     }
 
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PopAsync();
+    }
+
     // load cards for active deck
     private async void LoadCards()
     {
@@ -97,8 +110,11 @@ public partial class DecksPage : ContentPage
                 Text = $"[{q.Type.ToUpper()}]\n{q.Text}",
                 HeightRequest = 90,
                 FontSize = 12,
-                BackgroundColor = Color.FromArgb("#1D3557"),
-                TextColor = Colors.White,
+                BackgroundColor = Color.FromArgb("#152440"),
+                TextColor = Color.FromArgb("#E2E8F0"),
+                BorderColor = Color.FromArgb("#304B70"),
+                BorderWidth = 1,
+                CornerRadius = 16,
                 FontAttributes = FontAttributes.Bold
             };
 

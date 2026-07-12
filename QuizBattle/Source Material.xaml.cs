@@ -88,10 +88,12 @@ public partial class SourceMaterial : ContentPage
             var rowBtn = new Button
             {
                 Text = deck.Name.ToUpper(),
-                TextColor = Colors.White,
-                BackgroundColor = Colors.Transparent,
+                TextColor = Color.FromArgb("#DCE7FA"),
+                BackgroundColor = Color.FromArgb("#172542"),
+                BorderColor = Color.FromArgb("#304B70"),
+                BorderWidth = 1,
                 HorizontalOptions = LayoutOptions.Fill,
-                CornerRadius = 0,
+                CornerRadius = 10,
                 HeightRequest = 40,
                 FontAttributes = FontAttributes.Bold
             };
@@ -108,6 +110,10 @@ public partial class SourceMaterial : ContentPage
 
     private void CloseSetupPopup(object? sender, EventArgs e) => SetupPopupOverlay.IsVisible = false;
 
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PopAsync();
+    }
     // generate deck with ai
     private void OpenGenerateDeckModal(object? sender, EventArgs e)
     {

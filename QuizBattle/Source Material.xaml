@@ -2,77 +2,108 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="QuizBattle.SourceMaterial"
-             Title="GAME SETUP CONFIGURATIONS"
-             BackgroundColor="#121212">
-
+             Title="Battle Setup"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#091121">
     <Grid>
-        <ScrollView Padding="25">
-            <VerticalStackLayout Spacing="18">
-
-                <Label Text="SELECT GAME DIFFICULTY:" TextColor="White" FontAttributes="Bold" FontSize="14"/>
-
-                <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
-                    <HorizontalStackLayout Spacing="5">
-                        <CheckBox x:Name="EasyCheck" IsChecked="False" Color="#2A9D8F" CheckedChanged="OnDifficultyChanged"/>
-                        <Label Text="Easy" TextColor="White" VerticalOptions="Center"/>
-                    </HorizontalStackLayout>
-
-                    <HorizontalStackLayout Spacing="5">
-                        <CheckBox x:Name="NormalCheck" IsChecked="True" Color="#E9C46A" CheckedChanged="OnDifficultyChanged"/>
-                        <Label Text="Normal" TextColor="White" VerticalOptions="Center"/>
-                    </HorizontalStackLayout>
-
-                    <HorizontalStackLayout Spacing="5">
-                        <CheckBox x:Name="HardCheck" IsChecked="False" Color="#E76F51" CheckedChanged="OnDifficultyChanged"/>
-                        <Label Text="Hard" TextColor="White" VerticalOptions="Center"/>
-                    </HorizontalStackLayout>
-                </HorizontalStackLayout>
-
-                <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center" Margin="0,5">
-                    <Label x:Name="TimerTitleLabel" 
-                           Text="Timer (0-600s, Default: 150s):" 
-                           TextColor="White" 
-                           FontAttributes="Bold" 
-                           VerticalOptions="Center" 
-                           FontSize="14"/>
-
-                    <Entry x:Name="TimerEntry" 
-                           Grid.Column="1" 
-                           Text="150" 
-                           Keyboard="Numeric" 
-                           TextColor="White" 
-                           BackgroundColor="#222" 
-                           HorizontalTextAlignment="Center" 
-                           TextChanged="OnTimerTextChanged"/>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#091121" Offset="0" />
+                <GradientStop Color="#101837" Offset="0.58" />
+                <GradientStop Color="#0A2133" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+        <ScrollView>
+            <VerticalStackLayout Padding="22,22,22,28" Spacing="0" MaximumWidthRequest="680">
+                <!-- Header -->
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                    <Button Text="‹" Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0"
+                            FontSize="30" FontAttributes="None" BackgroundColor="#17223E" TextColor="#D5DDF2"
+                            BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+                    <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" Spacing="1">
+                        <Label Text="BATTLE SETUP" TextColor="#F8FAFC" FontSize="20" FontAttributes="Bold" />
+                        <Label Text="CONFIGURE YOUR NEXT CHALLENGE" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="2" BackgroundColor="#202044" Stroke="#4C438C" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="11,7">
+                        <Label Text="READY" TextColor="#C4B5FD" FontSize="10" FontAttributes="Bold" />
+                    </Border>
                 </Grid>
-
-                <BoxView HeightRequest="1" Color="#333" Margin="0,10"/>
-
-                <Button Text="GENERATE NEW DECK" Clicked="OpenGenerateDeckModal" BackgroundColor="#2A9D8F" TextColor="White" HeightRequest="50" FontAttributes="Bold"/>
-
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Active Collection Selection:" TextColor="Gray" FontSize="12"/>
-                    <Button x:Name="DeckDropdownButton" Text="CHOOSE DECK ▾" Clicked="ToggleDropdownLayout" BackgroundColor="#264653" HeightRequest="50" FontAttributes="Bold"/>
-
-                    <ScrollView x:Name="DropdownScrollContainer" HeightRequest="150" BackgroundColor="#1A1A1A" IsVisible="False">
-                        <VerticalStackLayout x:Name="DropdownStackList" Padding="5" Spacing="2"/>
-                    </ScrollView>
-                </VerticalStackLayout>
-
-                <Button Text="IMPORT RAW DECK FILE" Clicked="OpenImportDeckModal" BackgroundColor="#457B9D" TextColor="White" HeightRequest="50" FontAttributes="Bold"/>
-
-                <Button x:Name="LaunchGameButton" Text="LAUNCH BATTLE MATCH" Clicked="OnFinalLaunchClicked" 
-                        BackgroundColor="#E76F51" TextColor="White" FontAttributes="Bold" HeightRequest="60" Margin="0,20,0,0"/>
-
+                <Border Margin="0,26,0,0" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                    <VerticalStackLayout Spacing="7">
+                        <Label Text="CHOOSE YOUR CONDITIONS" TextColor="#8EA0C0" FontSize="11" FontAttributes="Bold" />
+                        <Label Text="Set the pace.&#10;Own the arena." TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                        <Label Text="Select a difficulty and a deck, then launch when you're ready." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                    </VerticalStackLayout>
+                </Border>
+                <!-- Difficulty -->
+                <Label Margin="0,28,0,10" Text="DIFFICULTY" TextColor="#A9B6CF" FontSize="11" FontAttributes="Bold" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                    <Border Grid.Column="0" BackgroundColor="#173B39" Stroke="#217C75" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="10">
+                        <VerticalStackLayout Spacing="2">
+                            <CheckBox x:Name="EasyCheck" IsChecked="False" Color="#5EEAD4" CheckedChanged="OnDifficultyChanged" HorizontalOptions="Center" />
+                            <Label Text="EASY" TextColor="#CFFAFE" FontSize="12" FontAttributes="Bold" HorizontalOptions="Center" />
+                            <Label Text="No timer" TextColor="#91CFCB" FontSize="10" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" BackgroundColor="#25234A" Stroke="#6456B8" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="10">
+                        <VerticalStackLayout Spacing="2">
+                            <CheckBox x:Name="NormalCheck" IsChecked="True" Color="#A78BFA" CheckedChanged="OnDifficultyChanged" HorizontalOptions="Center" />
+                            <Label Text="NORMAL" TextColor="#E9E4FF" FontSize="12" FontAttributes="Bold" HorizontalOptions="Center" />
+                            <Label Text="15 seconds" TextColor="#BDB3E8" FontSize="10" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" BackgroundColor="#3B202F" Stroke="#99506A" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="10">
+                        <VerticalStackLayout Spacing="2">
+                            <CheckBox x:Name="HardCheck" IsChecked="False" Color="#FDA4AF" CheckedChanged="OnDifficultyChanged" HorizontalOptions="Center" />
+                            <Label Text="HARD" TextColor="#FFE1E5" FontSize="12" FontAttributes="Bold" HorizontalOptions="Center" />
+                            <Label Text="7 seconds" TextColor="#E7A8B4" FontSize="10" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+                <!-- Timer -->
+                <Border Margin="0,22,0,0" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" VerticalOptions="Center">
+                        <VerticalStackLayout Spacing="3">
+                            <Label x:Name="TimerTitleLabel" Text="Timer (0-100s, Default: 15s):" TextColor="#F8FAFC" FontAttributes="Bold" FontSize="14" />
+                            <Label Text="Set 0 seconds for a calm, untimed battle." TextColor="#8EA0C0" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1" WidthRequest="82" BackgroundColor="#1A2644" Stroke="#3D5378" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="3,0">
+                            <Entry x:Name="TimerEntry" Text="15" Keyboard="Numeric" TextColor="#F8FAFC" BackgroundColor="Transparent"
+                                   FontAttributes="Bold" FontSize="18" HorizontalTextAlignment="Center" TextChanged="OnTimerTextChanged" />
+                        </Border>
+                    </Grid>
+                </Border>
+                <!-- Deck source -->
+                <Label Margin="0,28,0,10" Text="QUESTION DECK" TextColor="#A9B6CF" FontSize="11" FontAttributes="Bold" />
+                <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Select the cards you want to battle with." TextColor="#A9B6CF" FontSize="13" />
+                        <Button x:Name="DeckDropdownButton" Text="CHOOSE A DECK  ▾" Clicked="ToggleDropdownLayout" HeightRequest="52"
+                                BackgroundColor="#1A2644" TextColor="#E7EEFC" BorderColor="#3D5378" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
+                        <ScrollView x:Name="DropdownScrollContainer" HeightRequest="150" BackgroundColor="#0E1830" IsVisible="False">
+                            <VerticalStackLayout x:Name="DropdownStackList" Padding="6" Spacing="4" />
+                        </ScrollView>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Grid.Column="0" Text="GENERATE DECK" Clicked="OpenGenerateDeckModal" HeightRequest="48"
+                                    BackgroundColor="#14B8A6" TextColor="#052D2A" FontAttributes="Bold" CornerRadius="14" />
+                            <Button Grid.Column="1" Text="IMPORT DECK" Clicked="OpenImportDeckModal" HeightRequest="48"
+                                    BackgroundColor="#25234A" TextColor="#DDD6FE" BorderColor="#6456B8" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+                <Button x:Name="LaunchGameButton" Text="LAUNCH BATTLE  →" Clicked="OnFinalLaunchClicked" HeightRequest="60" Margin="0,26,0,0"
+                        BackgroundColor="#8B5CF6" TextColor="White" FontSize="16" FontAttributes="Bold" CornerRadius="17" />
+                <Label Text="A deck is required before you can enter the arena." Margin="0,12,0,0" TextColor="#71819F" FontSize="12"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </ScrollView>
-
-        <Grid x:Name="SetupPopupOverlay" BackgroundColor="#C0000000" IsVisible="False">
+        <!-- Deck creation/import modal -->
+        <Grid x:Name="SetupPopupOverlay" BackgroundColor="#C9000718" IsVisible="False">
             <Grid.GestureRecognizers>
-                <TapGestureRecognizer Tapped="CloseSetupPopup"/>
+                <TapGestureRecognizer Tapped="CloseSetupPopup" />
             </Grid.GestureRecognizers>
-            <Border BackgroundColor="#1F1F1F" Stroke="#444" WidthRequest="340" HorizontalOptions="Center" VerticalOptions="Center" Padding="20">
-                <VerticalStackLayout x:Name="SetupPopupBody" Spacing="15"/>
+            <Border BackgroundColor="#121D37" Stroke="#344867" StrokeThickness="1" WidthRequest="340" HorizontalOptions="Center" VerticalOptions="Center" Padding="20" StrokeShape="RoundRectangle 20">
+                <VerticalStackLayout x:Name="SetupPopupBody" Spacing="15" />
             </Border>
         </Grid>
     </Grid>
