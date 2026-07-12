@@ -7,6 +7,7 @@ namespace QuizBattle.Services
     {
         private readonly DatabaseService _dbService = new DatabaseService();
 
+        // load questions from database
         public async Task<List<Question>> LoadQuestionsAsync(string deckName)
         {
             List<Question> questions = new List<Question>();

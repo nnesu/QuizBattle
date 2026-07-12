@@ -11,7 +11,7 @@ namespace QuizBattle.Services
         {
             if (_db != null) return;
 
-            // Initialize SQLite native provider
+            // initialize sqlite
             SQLitePCL.Batteries_V2.Init();
 
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuizBattle.db3");
@@ -23,7 +23,7 @@ namespace QuizBattle.Services
             await MigrateLegacyTextFilesAsync();
         }
 
-        // --- DECK CRUD ---
+        // deck operations
         public async Task<List<DeckEntity>> GetDecksAsync()
         {
             await InitAsync();
@@ -71,7 +71,7 @@ namespace QuizBattle.Services
             await _db!.DeleteAsync<DeckEntity>(deckId);
         }
 
-        // --- QUESTION CRUD ---
+        // question operations
         public async Task<List<QuestionEntity>> GetQuestionsForDeckAsync(int deckId)
         {
             await InitAsync();
@@ -93,7 +93,7 @@ namespace QuizBattle.Services
             await _db!.DeleteAsync<QuestionEntity>(questionId);
         }
 
-        // --- IMPORT / EXPORT TEXT MATRIX PARSERS ---
+        // import and export text formats
         public async Task ImportDeckFromTextAsync(string deckName, string rawText, bool clearExisting = false)
         {
             await InitAsync();
@@ -165,7 +165,7 @@ namespace QuizBattle.Services
             return string.Join(Environment.NewLine, lines);
         }
 
-        // --- AUTOMATIC LEGACY FILE MIGRATION ---
+        // legacy text file migration
         private async Task MigrateLegacyTextFilesAsync()
         {
             try

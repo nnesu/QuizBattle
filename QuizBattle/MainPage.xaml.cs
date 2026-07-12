@@ -1,6 +1,6 @@
 ﻿using QuizBattle.Models;
 using QuizBattle.Services;
-using System.Linq; //Needed because we use Any()
+using System.Linq;
 
 namespace QuizBattle;
 
@@ -12,7 +12,7 @@ public partial class MainPage : ContentPage
     private int bossHP;
 
     private int playerLives;
-    private int startingLives; // store initial lives so sizing stays stable
+    private int startingLives;
 
     private HashSet<string> selectedOptions = new HashSet<string>();
     private Button[] optionButtons = Array.Empty<Button>();
@@ -22,11 +22,10 @@ public partial class MainPage : ContentPage
     private IDispatcherTimer? battleTimer;
     private int timeRemaining;
 
-    // heart sizing fields
-    private double heartSize = 28; // default heart size (device-independent units)
+    private double heartSize = 28;
     private readonly double heartMinSize = 18;
     private readonly double heartMaxSize = 48;
-    private readonly double heartSpacing = 4; // spacing between hearts (matches XAML margin)
+    private readonly double heartSpacing = 4;
 
     public MainPage()
     {
@@ -66,6 +65,7 @@ public partial class MainPage : ContentPage
         await StartBattle();
     }
 
+    // timer tick event
     private async void BattleTimerTick(object? sender, EventArgs e)
     {
         timeRemaining--;
@@ -80,6 +80,7 @@ public partial class MainPage : ContentPage
         await HandleDefeat("TIME'S UP!", "YOU RAN OUT OF TIME.");
     }
 
+    // start battle session
     private async Task StartBattle()
     {
         AnswerEntry.IsEnabled = true;
@@ -134,6 +135,7 @@ public partial class MainPage : ContentPage
         NextQuestion();
     }
 
+    // handle defeat dialog
     private async Task HandleDefeat(string title, string message)
     {
         AnswerEntry.IsEnabled = false;
@@ -166,6 +168,7 @@ public partial class MainPage : ContentPage
         }
     }
 
+    // handle victory dialog
     private async Task HandleVictory()
     {
         AnswerEntry.IsEnabled = false;
@@ -207,6 +210,7 @@ public partial class MainPage : ContentPage
         }
     }
 
+    // update player lives display
     private void UpdateLivesDisplay()
     {
         LivesLayout.Children.Clear();
@@ -258,6 +262,7 @@ public partial class MainPage : ContentPage
         TimeLabel.Text = $"TIME: {time:mm\\:ss}";
     }
 
+    // load next question
     private void NextQuestion()
     {
         if (battleQuestions.Count == 0)
@@ -355,6 +360,7 @@ public partial class MainPage : ContentPage
         }
     }
 
+    // submit answer logic
     private async void SubmitAnswer(object sender, EventArgs e)
     {
         if (currentQuestion == null)

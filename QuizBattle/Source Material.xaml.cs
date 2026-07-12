@@ -17,6 +17,7 @@ public partial class SourceMaterial : ContentPage
         RefreshDropdownItems();
     }
 
+    // difficulty checkbox change
     private void OnDifficultyChanged(object? sender, CheckedChangedEventArgs e)
     {
         if (_isChangingDifficulty || !e.Value) return;
@@ -48,6 +49,7 @@ public partial class SourceMaterial : ContentPage
         _isChangingDifficulty = false;
     }
 
+    // timer input validation
     private void OnTimerTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (string.IsNullOrEmpty(e.NewTextValue)) return;
@@ -75,6 +77,7 @@ public partial class SourceMaterial : ContentPage
         if (DropdownScrollContainer.IsVisible) RefreshDropdownItems();
     }
 
+    // refresh deck dropdown list
     private async void RefreshDropdownItems()
     {
         DropdownStackList.Children.Clear();
@@ -105,6 +108,7 @@ public partial class SourceMaterial : ContentPage
 
     private void CloseSetupPopup(object? sender, EventArgs e) => SetupPopupOverlay.IsVisible = false;
 
+    // generate deck with ai
     private void OpenGenerateDeckModal(object? sender, EventArgs e)
     {
         var title = new Entry { Placeholder = "New Deck Name...", TextColor = Colors.White, BackgroundColor = Colors.Black };
@@ -132,6 +136,7 @@ public partial class SourceMaterial : ContentPage
         SetupPopupOverlay.IsVisible = true;
     }
 
+    // import deck text
     private void OpenImportDeckModal(object? sender, EventArgs e)
     {
         var importName = new Entry { Placeholder = "Deck Name...", TextColor = Colors.White, BackgroundColor = Colors.Black };
@@ -153,6 +158,7 @@ public partial class SourceMaterial : ContentPage
         SetupPopupOverlay.IsVisible = true;
     }
 
+    // launch battle game session
     private async void OnFinalLaunchClicked(object? sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName))

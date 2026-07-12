@@ -16,6 +16,7 @@ public partial class DecksPage : ContentPage
         LoadDecks();
     }
 
+    // load decks from database
     private async void LoadDecks()
     {
         DecksGrid.Children.Clear();
@@ -77,6 +78,7 @@ public partial class DecksPage : ContentPage
         LoadDecks();
     }
 
+    // load cards for active deck
     private async void LoadCards()
     {
         if (_currentDeck == null) return;
@@ -111,6 +113,7 @@ public partial class DecksPage : ContentPage
         }
     }
 
+    // edit card popup modal
     private void OpenEditCardPopup(QuestionEntity question)
     {
         string currentRawText = question.Type.Equals("Identification", StringComparison.OrdinalIgnoreCase)
@@ -169,6 +172,7 @@ public partial class DecksPage : ContentPage
         ShowPopup(layout);
     }
 
+    // card syntax validation
     private bool ValidateCardFormat(string rawText, out string errorMessage)
     {
         errorMessage = "";
@@ -254,6 +258,7 @@ public partial class DecksPage : ContentPage
         PopupBackground.IsVisible = true;
     }
 
+    // generate cards with groq ai
     private void OpenGenerateCardsPopup(object? sender, EventArgs e)
     {
         var label = new Label { Text = "PASTE MATERIAL NOTES:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
@@ -278,6 +283,7 @@ public partial class DecksPage : ContentPage
         ShowPopup(layout);
     }
 
+    // create custom card
     private void OpenCreateCardPopup(object? sender, EventArgs e)
     {
         var label = new Label { Text = "ADD CUSTOM CARD MANUALLY", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
@@ -303,6 +309,7 @@ public partial class DecksPage : ContentPage
         ShowPopup(layout);
     }
 
+    // import deck text
     private void OpenImportPopup(object? sender, EventArgs e)
     {
         var label = new Label { Text = "IMPORT DECK DATA TEXT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
@@ -321,6 +328,7 @@ public partial class DecksPage : ContentPage
         ShowPopup(layout);
     }
 
+    // export deck text
     private void OpenExportPopup(object? sender, EventArgs e)
     {
         if (_currentDeck == null) return;

@@ -9,6 +9,7 @@ namespace QuizBattle.Services
         private const string ApiKey = "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";
         private const string ApiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
+        // generate questions with groq ai
         public async Task<string> GenerateQuestionsAsync(string material, int maxQuestions)
         {
             string prompt = $@"You are a quiz question generator. Read the learning material below and create exactly {maxQuestions} questions based on it.
