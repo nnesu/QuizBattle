@@ -14,7 +14,7 @@ public partial class MainPage : ContentPage
     private int playerLives;
     private int startingLives; // store initial lives so sizing stays stable
 
-    private HashSet<string> selectedOptions = new HashSet<string>();    
+    private HashSet<string> selectedOptions = new HashSet<string>();
     private Button[] optionButtons = Array.Empty<Button>();
     private readonly Color defaultOptionColor = Colors.LightGray;
     private readonly Color selectedOptionColor = Colors.Green;
@@ -104,7 +104,12 @@ public partial class MainPage : ContentPage
 
         QuestionLoader loader = new QuestionLoader();
 
-        battleQuestions = await loader.LoadQuestionsAsync("QuestionList.txt");
+        // ROUTE DYNAMIC FILE SELECTION VIA APP STATE MODELS Logic
+        string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
+            ? "QuestionList.txt"
+            : GameSettings.SelectedDeckName;
+
+        battleQuestions = await loader.LoadQuestionsAsync(deckFile);
 
         bossHP = battleQuestions.Count;
 
@@ -346,7 +351,7 @@ public partial class MainPage : ContentPage
 
         foreach (Button button in optionButtons)
         {
-            button.BackgroundColor = defaultOptionColor ;
+            button.BackgroundColor = defaultOptionColor;
         }
 
         ResultLabel.Text = string.Empty;
@@ -367,11 +372,11 @@ public partial class MainPage : ContentPage
 
             Button[] buttons =
             {
-            OptionButton1,
-            OptionButton2,
-            OptionButton3,
-            OptionButton4
-        };
+                OptionButton1,
+                OptionButton2,
+                OptionButton3,
+                OptionButton4
+            };
 
             for (int index = 0; index < buttons.Length; index++)
             {
@@ -507,5 +512,4 @@ public partial class MainPage : ContentPage
 
         return true;
     }
-
 }

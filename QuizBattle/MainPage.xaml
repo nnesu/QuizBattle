@@ -2,91 +2,109 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="QuizBattle.MainPage">
+    x:Class="QuizBattle.MainPage"
+    Title="Quiz Battle"
+    BackgroundColor="#121212">
 
-    <VerticalStackLayout
-        Padding="20"
-        Spacing="10">
+    <ScrollView Padding="20">
+        <VerticalStackLayout Spacing="15">
 
-        <Label
-            x:Name="BossLabel"
-            FontSize="22" />
+            <Label
+                x:Name="BossLabel"
+                FontSize="22"
+                TextColor="White"
+                FontAttributes="Bold"
+                HorizontalOptions="Center"/>
 
-       <!--space between player and boss-->
-        <BoxView
-            HeightRequest="20"
-            Color="Transparent" />
-        
-        <Label
-            Text="Player HP"
-            FontSize="16"
-            HorizontalOptions="Start" />
+            <Label
+                x:Name="LivesLabel"
+                FontSize="22"
+                TextColor="White"
+                HorizontalOptions="Center"/>
 
-        <!-- Player hearts -->
-        <HorizontalStackLayout
-            x:Name="LivesLayout"
-            Spacing="4"
-            HorizontalOptions="Fill"
-            VerticalOptions="Center" />
+            <HorizontalStackLayout
+                x:Name="LivesLayout"
+                IsVisible="False"
+                HorizontalOptions="Center"
+                Spacing="4"/>
 
-        <!-- I just left this -->
-        <Label
-            x:Name="LivesLabel"
-            FontSize="22"
-            IsVisible="False" />
+            <Label
+                x:Name="MasteryLabel"
+                Text="Mastery: 0 / 1"
+                FontSize="18"
+                TextColor="LightGray"
+                HorizontalOptions="Center"/>
 
-        <Label
-            x:Name="MasteryLabel"
-            Text="Mastery: 0 / 1"
-            FontSize="18" />
+            <Label
+                x:Name="TimeLabel"
+                Text="Time: --"
+                FontSize="18"
+                TextColor="#E9C46A"
+                HorizontalOptions="Center"/>
 
-        <Label
-            x:Name="TimeLabel"
-            Text="Time: --"
-            FontSize="18"
-            HorizontalOptions="Center"/>
+            <BoxView HeightRequest="1" Color="#333" Margin="0,10"/>
 
-        <Label
-            x:Name="QuestionLabel"
-            FontSize="20" />
+            <Label
+                x:Name="QuestionLabel"
+                FontSize="20"
+                TextColor="White"
+                FontAttributes="Bold"
+                HorizontalOptions="Center"/>
 
-        <!-- Identification / FillBlank -->
-        <Entry
-            x:Name="AnswerEntry"
-            Placeholder="Type your answer" />
+            <Entry
+                x:Name="AnswerEntry"
+                Placeholder="Type your answer"
+                TextColor="White"
+                PlaceholderColor="Gray"
+                BackgroundColor="#222"/>
 
-        <!-- Multiple Choice -->
-        <VerticalStackLayout
-            x:Name="MultipleChoiceLayout"
-            IsVisible="False"
-            Spacing="8">
+            <VerticalStackLayout
+                x:Name="MultipleChoiceLayout"
+                IsVisible="False"
+                Spacing="10">
+
+                <Button
+                    x:Name="OptionButton1"
+                    Clicked="OptionClicked"
+                    BackgroundColor="LightGray"
+                    TextColor="Black"/>
+
+                <Button
+                    x:Name="OptionButton2"
+                    Clicked="OptionClicked"
+                    BackgroundColor="LightGray"
+                    TextColor="Black"/>
+
+                <Button
+                    x:Name="OptionButton3"
+                    Clicked="OptionClicked"
+                    BackgroundColor="LightGray"
+                    TextColor="Black"/>
+
+                <Button
+                    x:Name="OptionButton4"
+                    Clicked="OptionClicked"
+                    BackgroundColor="LightGray"
+                    TextColor="Black"/>
+
+            </VerticalStackLayout>
 
             <Button
-                x:Name="OptionButton1"
-                Clicked="OptionClicked" />
+                Text="Submit"
+                Clicked="SubmitAnswer"
+                BackgroundColor="#2A9D8F"
+                TextColor="White"
+                FontAttributes="Bold"
+                HeightRequest="50"
+                Margin="0,10,0,0"/>
 
-            <Button
-                x:Name="OptionButton2"
-                Clicked="OptionClicked" />
-
-            <Button
-                x:Name="OptionButton3"
-                Clicked="OptionClicked" />
-
-            <Button
-                x:Name="OptionButton4"
-                Clicked="OptionClicked" />
+            <Label
+                x:Name="ResultLabel"
+                FontSize="18"
+                FontAttributes="Bold"
+                HorizontalOptions="Center"/>
 
         </VerticalStackLayout>
-
-        <Button
-            Text="Submit"
-            Clicked="SubmitAnswer" />
-
-        <Label
-            x:Name="ResultLabel"
-            FontSize="18" />
-
-    </VerticalStackLayout>
+    </ScrollView>
 
 </ContentPage>

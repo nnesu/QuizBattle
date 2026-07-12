@@ -6,11 +6,7 @@ namespace QuizBattle.Services
     public class AIService
     {
         private static readonly HttpClient httpClient = new HttpClient();
-
-        // your groq api key
         private const string ApiKey = "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";
-
-        // groq chat completions endpoint
         private const string ApiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
         public async Task<string> GenerateQuestionsAsync(string material, int maxQuestions)
@@ -32,10 +28,7 @@ Learning Material:
             var requestBody = new
             {
                 model = "llama-3.1-8b-instant",
-                messages = new[]
-                {
-                    new { role = "user", content = prompt }
-                },
+                messages = new[] { new { role = "user", content = prompt } },
                 temperature = 0.5
             };
 
@@ -47,25 +40,12 @@ Learning Material:
             string responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
-            {
                 throw new Exception($"API Error ({response.StatusCode}): {responseBody}");
-            }
 
             using JsonDocument doc = JsonDocument.Parse(responseBody);
+            string content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? string.Empty;
 
-            string generatedContent = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString() ?? string.Empty;
-
-            // clean markdown tags if present
-            generatedContent = generatedContent
-                .Replace("```text", "")
-                .Replace("```", "")
-                .Trim();
-
-            return generatedContent;
+            return content.Replace("```text", "").Replace("```", "").Trim();
         }
     }
 }

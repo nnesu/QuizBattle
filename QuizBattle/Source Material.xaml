@@ -1,36 +1,65 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizBattle.SourceMaterial"
+             Title="Game Setup Configurations"
+             BackgroundColor="#121212">
 
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="QuizBattle.SourceMaterial"
-    Title="Learning Material">
+    <Grid>
+        <ScrollView Padding="25">
+            <VerticalStackLayout Spacing="18">
 
-    <VerticalStackLayout
-        Padding="20"
-        Spacing="20">
+                <Label Text="SELECT GAME DIFFICULTY:" TextColor="White" FontAttributes="Bold" FontSize="14"/>
 
-        <Label
-            Text="Copy-paste your learning material here:"
-            FontSize="20" />
+                <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
+                    <HorizontalStackLayout Spacing="5">
+                        <CheckBox x:Name="EasyCheck" IsChecked="False" Color="#2A9D8F" CheckedChanged="OnDifficultyChanged"/>
+                        <Label Text="Easy (No Timer)" TextColor="White" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
 
-        <Editor
-            x:Name="MaterialEditor"
-            HeightRequest="300"
-            AutoSize="TextChanges"
-            Placeholder="Paste your notes here..." />
+                    <HorizontalStackLayout Spacing="5">
+                        <CheckBox x:Name="NormalCheck" IsChecked="True" Color="#E9C46A" CheckedChanged="OnDifficultyChanged"/>
+                        <Label Text="Normal (15s)" TextColor="White" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
 
-        <Label Text="Maximum Questions"/>
+                    <HorizontalStackLayout Spacing="5">
+                        <CheckBox x:Name="HardCheck" IsChecked="False" Color="#E76F51" CheckedChanged="OnDifficultyChanged"/>
+                        <Label Text="Hard (7s)" TextColor="White" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                </HorizontalStackLayout>
 
-        <Entry
-            x:Name="QuestionLimitEntry"
-            Keyboard="Numeric"
-            Text="20"/>
+                <Border x:Name="TimerStatusPanel" BackgroundColor="#222" Stroke="#444" IsVisible="True" Padding="10">
+                    <Label x:Name="TimerPanelLabel" Text="Active Battle Turn Timer Window: 15 Seconds Limit" TextColor="#E9C46A" HorizontalOptions="Center"/>
+                </Border>
 
-        <Button
-            Text="Start Quiz"
-            Clicked="StartQuizClicked" />
+                <BoxView HeightRequest="1" Color="#333" Margin="0,10"/>
 
-    </VerticalStackLayout>
+                <Button Text="✨ Generate New Deck" Clicked="OpenGenerateDeckModal" BackgroundColor="#2A9D8F" TextColor="White" HeightRequest="50"/>
 
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Active Collection Selection:" TextColor="Gray" FontSize="12"/>
+                    <Button x:Name="DeckDropdownButton" Text="Choose Deck (Dropdown) ▾" Clicked="ToggleDropdownLayout" BackgroundColor="#264653" HeightRequest="50"/>
+
+                    <ScrollView x:Name="DropdownScrollContainer" HeightRequest="150" BackgroundColor="#1A1A1A" IsVisible="False">
+                        <VerticalStackLayout x:Name="DropdownStackList" Padding="5" Spacing="2"/>
+                    </ScrollView>
+                </VerticalStackLayout>
+
+                <Button Text="📥 Import Raw Deck File" Clicked="OpenImportDeckModal" BackgroundColor="#457B9D" TextColor="White" HeightRequest="50"/>
+
+                <Button x:Name="LaunchGameButton" Text="LAUNCH BATTLE MATCH" Clicked="OnFinalLaunchClicked" 
+                        BackgroundColor="#E76F51" TextColor="White" FontAttributes="Bold" HeightRequest="60" Margin="0,20,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid x:Name="SetupPopupOverlay" BackgroundColor="#C0000000" IsVisible="False">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Tapped="CloseSetupPopup"/>
+            </Grid.GestureRecognizers>
+            <Border BackgroundColor="#1F1F1F" Stroke="#444" WidthRequest="340" HorizontalOptions="Center" VerticalOptions="Center" Padding="20">
+                <VerticalStackLayout x:Name="SetupPopupBody" Spacing="15"/>
+            </Border>
+        </Grid>
+    </Grid>
 </ContentPage>

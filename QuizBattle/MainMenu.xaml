@@ -1,25 +1,46 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizBattle.MainMenu"
+             Title="Quiz Battle">
 
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="QuizBattle.MainMenu"
-    Title="Quiz Battle">
+    <Grid RowDefinitions="*, Auto, Auto, Auto, *" 
+          BackgroundColor="#1F1F1F" 
+          Padding="30">
 
-    <VerticalStackLayout
-        VerticalOptions="Center"
-        HorizontalOptions="Center"
-        Spacing="20">
+        <Label Grid.Row="0" 
+               Text="QUIZ BATTLE" 
+               TextColor="White" 
+               FontSize="36" 
+               FontAttributes="Bold" 
+               HorizontalOptions="Center" 
+               VerticalOptions="Center"/>
 
-        <Label
-            Text="Quiz Battle"
-            FontSize="32"
-            HorizontalOptions="Center" />
+        <Button Grid.Row="1" 
+                Text="PLAY GAME" 
+                Clicked="OnPlayClicked" 
+                HeightRequest="60" 
+                Margin="0,10" 
+                BackgroundColor="#2A9D8F" 
+                TextColor="White" 
+                FontAttributes="Bold"/>
 
-        <Button
-            Text="Play"
-            Clicked="PlayClicked" />
+        <Button Grid.Row="2" 
+                Text="MANAGE DECKS" 
+                Clicked="OnDecksClicked" 
+                HeightRequest="60" 
+                Margin="0,10" 
+                BackgroundColor="#E76F51" 
+                TextColor="White" 
+                FontAttributes="Bold"/>
 
-    </VerticalStackLayout>
-
+        <Button Grid.Row="3" 
+                Text="EXIT" 
+                Clicked="OnExitClicked" 
+                HeightRequest="60" 
+                Margin="0,10" 
+                BackgroundColor="#E63946" 
+                TextColor="White" 
+                FontAttributes="Bold"/>
+    </Grid>
 </ContentPage>
