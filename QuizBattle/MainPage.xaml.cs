@@ -27,6 +27,8 @@ public partial class MainPage : ContentPage
     private readonly double heartMaxSize = 48;
     private readonly double heartSpacing = 4;
 
+    private bool heartSizeLocked = false;
+
     public MainPage()
     {
         InitializeComponent();
@@ -52,9 +54,13 @@ public partial class MainPage : ContentPage
         double candidate = availableWidth / startingLives;
         double computed = Math.Clamp(candidate, heartMinSize, heartMaxSize);
 
+        if (heartSizeLocked)
+            return;
+
         if (Math.Abs(computed - heartSize) > 0.5)
         {
             heartSize = computed;
+            heartSizeLocked = true;
             UpdateLivesDisplay();
         }
     }
@@ -101,6 +107,8 @@ public partial class MainPage : ContentPage
 
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
+
+        heartSizeLocked = false;
 
         currentQuestion = null;
         AnswerEntry.Text = string.Empty;

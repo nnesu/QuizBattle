@@ -28,22 +28,22 @@ public partial class SourceMaterial : ContentPage
         {
             NormalCheck.IsChecked = false; HardCheck.IsChecked = false;
             GameSettings.CurrentDifficulty = "Easy";
-            TimerTitleLabel.Text = "Timer (0-100s, Default: 0s):";
-            TimerEntry.Text = "0";
+            TimerTitleLabel.Text = "Timer (0-600s, Default: 300s):";
+            TimerEntry.Text = "300";
         }
         else if (cb == NormalCheck)
         {
             EasyCheck.IsChecked = false; HardCheck.IsChecked = false;
             GameSettings.CurrentDifficulty = "Normal";
-            TimerTitleLabel.Text = "Timer (0-100s, Default: 15s):";
-            TimerEntry.Text = "15";
+            TimerTitleLabel.Text = "Timer (0-600s, Default: 150s):";
+            TimerEntry.Text = "150";
         }
         else if (cb == HardCheck)
         {
             EasyCheck.IsChecked = false; NormalCheck.IsChecked = false;
             GameSettings.CurrentDifficulty = "Hard";
-            TimerTitleLabel.Text = "Timer (0-100s, Default: 7s):";
-            TimerEntry.Text = "7";
+            TimerTitleLabel.Text = "Timer (0-600s, Default: 100s):";
+            TimerEntry.Text = "100";
         }
 
         _isChangingDifficulty = false;
@@ -64,9 +64,9 @@ public partial class SourceMaterial : ContentPage
 
         if (int.TryParse(digitsOnly, out int val))
         {
-            if (val > 100)
+            if (val > 600)
             {
-                TimerEntry.Text = "100";
+                TimerEntry.Text = "600";
             }
         }
     }
@@ -183,7 +183,7 @@ public partial class SourceMaterial : ContentPage
 
         if (int.TryParse(TimerEntry.Text, out int parsedTimer))
         {
-            parsedTimer = Math.Clamp(parsedTimer, 0, 100);
+            parsedTimer = Math.Clamp(parsedTimer, 0, 600);
             if (parsedTimer == 0)
             {
                 GameSettings.IsTimerEnabled = false;

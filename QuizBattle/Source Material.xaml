@@ -30,7 +30,7 @@
 
                 <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10" VerticalOptions="Center" Margin="0,5">
                     <Label x:Name="TimerTitleLabel" 
-                           Text="Timer (0-100s, Default: 15s):" 
+                           Text="Timer (0-600s, Default: 150s):" 
                            TextColor="White" 
                            FontAttributes="Bold" 
                            VerticalOptions="Center" 
@@ -38,7 +38,7 @@
 
                     <Entry x:Name="TimerEntry" 
                            Grid.Column="1" 
-                           Text="15" 
+                           Text="150" 
                            Keyboard="Numeric" 
                            TextColor="White" 
                            BackgroundColor="#222" 
