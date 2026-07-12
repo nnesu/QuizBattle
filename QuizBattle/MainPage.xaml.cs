@@ -1,5 +1,5 @@
-﻿using QuizBattle.Services;
-using QuizBattle.Models;
+﻿using QuizBattle.Models;
+using QuizBattle.Services;
 using System.Linq; //Needed because we use Any()
 
 namespace QuizBattle;
@@ -12,6 +12,7 @@ public partial class MainPage : ContentPage
     private int bossHP;
 
     private int playerLives;
+    private int startingLives; // store initial lives so sizing stays stable
 
     private HashSet<string> selectedOptions = new HashSet<string>();    
     private Button[] optionButtons = Array.Empty<Button>();
@@ -20,6 +21,12 @@ public partial class MainPage : ContentPage
 
     private IDispatcherTimer? battleTimer;
     private int timeRemaining;
+
+    // heart sizing fields
+    private double heartSize = 28; // default heart size (device-independent units)
+    private readonly double heartMinSize = 18;
+    private readonly double heartMaxSize = 48;
+    private readonly double heartSpacing = 4; // spacing between hearts (matches XAML margin)
 
     public MainPage()
     {
@@ -32,6 +39,35 @@ public partial class MainPage : ContentPage
             OptionButton3,
             OptionButton4
         };
+
+        // react when the Lives layout size changes so we can compute a responsive heart size
+        LivesLayout.SizeChanged += LivesLayout_SizeChanged;
+    }
+
+    private void LivesLayout_SizeChanged(object? sender, EventArgs e)
+    {
+        // Only compute when we know the intended max number of hearts and layout width is measured
+        if (startingLives <= 0 || LivesLayout.Width <= 0)
+            return;
+
+        // total space used by spacing between hearts
+        double totalSpacing = heartSpacing * Math.Max(0, startingLives - 1);
+
+        // available width inside the LivesLayout for hearts
+        double availableWidth = Math.Max(0, LivesLayout.Width - totalSpacing);
+
+        // compute candidate size per heart
+        double candidate = availableWidth / startingLives;
+
+        // clamp into reasonable bounds so hearts remain usable on very small/large widths
+        double computed = Math.Clamp(candidate, heartMinSize, heartMaxSize);
+
+        // update if changed meaningfully
+        if (Math.Abs(computed - heartSize) > 0.5)
+        {
+            heartSize = computed;
+            UpdateLivesDisplay();
+        }
     }
 
     protected override async void OnAppearing()
@@ -73,6 +109,7 @@ public partial class MainPage : ContentPage
         bossHP = battleQuestions.Count;
 
         playerLives = GameSettings.PlayerLives;
+        startingLives = GameSettings.PlayerLives; // remember starting lives so sizing is stable
 
         currentQuestion = null;
 
@@ -111,6 +148,10 @@ public partial class MainPage : ContentPage
 
             battleTimer.Start();
         }
+
+        // Force a size-based recompute on start (in case layout already measured)
+        if (LivesLayout.Width > 0)
+            LivesLayout_SizeChanged(LivesLayout, EventArgs.Empty);
 
         NextQuestion();
     }
@@ -189,14 +230,55 @@ public partial class MainPage : ContentPage
 
         if (GameSettings.IsZenMode)
         {
+            // Zen mode -> show text infinity, hide hearts
             LivesLabel.Text = "Lives: ∞";
-            // or:
-            // LivesLabel.IsVisible = false;
+            LivesLabel.IsVisible = true;
+            LivesLayout.IsVisible = false;
         }
         else
         {
-            LivesLabel.Text = $"Lives: {playerLives}";
-            // LivesLabel.IsVisible = true;
+            LivesLabel.IsVisible = false;
+            LivesLayout.IsVisible = true;
+            // Update playerLives display as hearts
+            UpdateLivesDisplay();
+        }
+    }
+
+    // render filled heart images according to playerLives
+    private void UpdateLivesDisplay()
+    {
+        LivesLayout.Children.Clear();
+
+        // ensure a reasonable heartSize if layout isn't measured yet
+        double size = heartSize;
+        if (size <= 0)
+            size = 28;
+
+        // show filled hearts for remaining lives
+        for (int i = 0; i < playerLives; i++)
+        {
+            var img = new Image
+            {
+                Source = "heart_filled.png",
+                WidthRequest = size,
+                HeightRequest = size,
+                Aspect = Aspect.AspectFit,
+                Margin = new Thickness(0, 0, heartSpacing, 0)
+            };
+
+            LivesLayout.Children.Add(img);
+        }
+
+        // If images are not present, show a Unicode fallback
+        if (LivesLayout.Children.Count == 0)
+        {
+            LivesLayout.Children.Add(new Label
+            {
+                Text = new string('♥', Math.Max(0, playerLives)),
+                FontSize = Math.Min(24, size),
+                TextColor = Colors.Red,
+                VerticalOptions = LayoutOptions.Center
+            });
         }
     }
 
@@ -407,7 +489,6 @@ public partial class MainPage : ContentPage
         NextQuestion();
     }
 
-
     protected override bool OnBackButtonPressed()
     {
         MainThread.BeginInvokeOnMainThread(async () =>
@@ -426,6 +507,5 @@ public partial class MainPage : ContentPage
 
         return true;
     }
-
 
 }

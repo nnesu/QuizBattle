@@ -12,16 +12,35 @@
             x:Name="BossLabel"
             FontSize="22" />
 
+       <!--space between player and boss-->
+        <BoxView
+            HeightRequest="20"
+            Color="Transparent" />
+        
+        <Label
+            Text="Player HP"
+            FontSize="16"
+            HorizontalOptions="Start" />
+
+        <!-- Player hearts -->
+        <HorizontalStackLayout
+            x:Name="LivesLayout"
+            Spacing="4"
+            HorizontalOptions="Fill"
+            VerticalOptions="Center" />
+
+        <!-- I just left this -->
         <Label
             x:Name="LivesLabel"
-            FontSize="22" />
-		
-		<Label
+            FontSize="22"
+            IsVisible="False" />
+
+        <Label
             x:Name="MasteryLabel"
             Text="Mastery: 0 / 1"
             FontSize="18" />
 
-		<Label
+        <Label
             x:Name="TimeLabel"
             Text="Time: --"
             FontSize="18"
