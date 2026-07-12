@@ -1,4 +1,5 @@
 using System.Text;
+using QuizBattle.Models;
 using QuizBattle.Services;
 
 namespace QuizBattle;
@@ -6,50 +7,36 @@ namespace QuizBattle;
 public partial class DecksPage : ContentPage
 {
     private readonly AIService _aiService = new AIService();
-    private string _currentDeck = "";
-    private readonly string _decksFolder = Path.Combine(FileSystem.Current.AppDataDirectory, "Decks");
+    private readonly DatabaseService _dbService = new DatabaseService();
+    private DeckEntity? _currentDeck;
 
     public DecksPage()
     {
         InitializeComponent();
-        if (!Directory.Exists(_decksFolder)) Directory.CreateDirectory(_decksFolder);
         LoadDecks();
     }
 
-    private async void OnUniversalBackClicked(object? sender, EventArgs e)
-    {
-        if (Navigation.NavigationStack.Count > 1)
-        {
-            await Navigation.PopAsync();
-        }
-        else
-        {
-            await Shell.Current.GoToAsync("//MainMenu");
-        }
-    }
-
-    private void LoadDecks()
+    private async void LoadDecks()
     {
         DecksGrid.Children.Clear();
         DecksGrid.RowDefinitions.Clear();
 
-        var files = Directory.GetFiles(_decksFolder, "*.txt");
+        var decks = await _dbService.GetDecksAsync();
         int row = 0, col = 0;
 
-        foreach (var file in files)
+        foreach (var deck in decks)
         {
             if (col == 0) DecksGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            string name = Path.GetFileNameWithoutExtension(file);
             var btn = new Button
             {
-                Text = name.ToUpper(),
+                Text = deck.Name.ToUpper(),
                 HeightRequest = 100,
                 BackgroundColor = Color.FromArgb("#264653"),
                 TextColor = Colors.White,
                 FontAttributes = FontAttributes.Bold
             };
-            btn.Clicked += (s, e) => ViewDeck(name);
+            btn.Clicked += (s, e) => ViewDeck(deck);
 
             Grid.SetRow(btn, row);
             Grid.SetColumn(btn, col);
@@ -74,10 +61,10 @@ public partial class DecksPage : ContentPage
         DecksGrid.Children.Add(addBtn);
     }
 
-    private void ViewDeck(string deckName)
+    private void ViewDeck(DeckEntity deck)
     {
-        _currentDeck = deckName;
-        DeckTitleLabel.Text = deckName.ToUpper();
+        _currentDeck = deck;
+        DeckTitleLabel.Text = deck.Name.ToUpper();
         DecksView.IsVisible = false;
         CardsView.IsVisible = true;
         LoadCards();
@@ -90,32 +77,22 @@ public partial class DecksPage : ContentPage
         LoadDecks();
     }
 
-    private void LoadCards()
+    private async void LoadCards()
     {
+        if (_currentDeck == null) return;
         CardsGrid.Children.Clear();
         CardsGrid.RowDefinitions.Clear();
 
-        string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-        if (!File.Exists(path)) return;
-
-        var lines = File.ReadAllLines(path);
+        var questions = await _dbService.GetQuestionsForDeckAsync(_currentDeck.Id);
         int row = 0, col = 0;
 
-        for (int i = 0; i < lines.Length; i++)
+        foreach (var q in questions)
         {
-            if (string.IsNullOrWhiteSpace(lines[i])) continue;
-            var parts = lines[i].Split('|');
-            if (parts.Length < 3) continue;
-
             if (col == 0) CardsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-            int currentLineIndex = i;
-            string rawLineText = lines[i];
-            string questionDisplay = parts[1];
 
             var cardBtn = new Button
             {
-                Text = $"[{parts[0].ToUpper()}]\n{questionDisplay}",
+                Text = $"[{q.Type.ToUpper()}]\n{q.Text}",
                 HeightRequest = 90,
                 FontSize = 12,
                 BackgroundColor = Color.FromArgb("#1D3557"),
@@ -123,7 +100,7 @@ public partial class DecksPage : ContentPage
                 FontAttributes = FontAttributes.Bold
             };
 
-            cardBtn.Clicked += (s, e) => OpenEditCardPopup(currentLineIndex, rawLineText);
+            cardBtn.Clicked += (s, e) => OpenEditCardPopup(q);
 
             Grid.SetRow(cardBtn, row);
             Grid.SetColumn(cardBtn, col);
@@ -134,15 +111,17 @@ public partial class DecksPage : ContentPage
         }
     }
 
-    private void OpenEditCardPopup(int lineIndex, string currentRawText)
+    private void OpenEditCardPopup(QuestionEntity question)
     {
+        string currentRawText = question.Type.Equals("Identification", StringComparison.OrdinalIgnoreCase)
+            ? $"Identification|{question.Text}|{question.AnswersRaw}"
+            : $"MultipleChoice|{question.Text}|{question.OptionsRaw.Replace('|', '|')}|ANS|{question.AnswersRaw}";
+
         var label = new Label { Text = "EDIT CARD FORMAT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         var editor = new Editor { Text = currentRawText, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White };
 
         var saveBtn = new Button { Text = "SAVE CHANGES", BackgroundColor = Color.FromArgb("#2A9D8F"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         var deleteBtn = new Button { Text = "DELETE", BackgroundColor = Color.FromArgb("#E63946"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
-
-        string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
 
         saveBtn.Clicked += async (s, ev) => {
             string updatedText = editor.Text?.Trim() ?? "";
@@ -153,25 +132,27 @@ public partial class DecksPage : ContentPage
                 return;
             }
 
-            var fileLines = File.ReadAllLines(path).ToList();
-            if (lineIndex >= 0 && lineIndex < fileLines.Count)
+            string[] parts = updatedText.Split('|');
+            question.Type = parts[0].Trim();
+            question.Text = parts[1].Trim();
+
+            if (question.Type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
             {
-                fileLines[lineIndex] = updatedText;
-                File.WriteAllLines(path, fileLines, Encoding.UTF8);
+                question.AnswersRaw = parts[2].Trim();
+            }
+            else
+            {
+                question.OptionsRaw = $"{parts[2].Trim()}|{parts[3].Trim()}|{parts[4].Trim()}|{parts[5].Trim()}";
+                question.AnswersRaw = parts[7].Trim();
             }
 
+            await _dbService.SaveQuestionAsync(question);
             PopupBackground.IsVisible = false;
             LoadCards();
         };
 
-        deleteBtn.Clicked += (s, ev) => {
-            var fileLines = File.ReadAllLines(path).ToList();
-            if (lineIndex >= 0 && lineIndex < fileLines.Count)
-            {
-                fileLines.RemoveAt(lineIndex);
-                File.WriteAllLines(path, fileLines, Encoding.UTF8);
-            }
-
+        deleteBtn.Clicked += async (s, ev) => {
+            await _dbService.DeleteQuestionAsync(question.Id);
             PopupBackground.IsVisible = false;
             LoadCards();
         };
@@ -235,34 +216,31 @@ public partial class DecksPage : ContentPage
         string name = await DisplayPromptAsync("NEW DECK", "Enter deck filename title:", "CREATE", "CANCEL");
         if (!string.IsNullOrWhiteSpace(name))
         {
-            string path = Path.Combine(_decksFolder, $"{name.Trim()}.txt");
-            if (!File.Exists(path)) File.WriteAllText(path, "", Encoding.UTF8);
+            await _dbService.CreateDeckAsync(name.Trim());
             LoadDecks();
         }
     }
 
     private async void OnRenameDeckClicked(object? sender, EventArgs e)
     {
-        string newName = await DisplayPromptAsync("RENAME DECK", "Enter a new name:", "SAVE", "CANCEL", initialValue: _currentDeck);
-        if (!string.IsNullOrWhiteSpace(newName) && newName != _currentDeck)
+        if (_currentDeck == null) return;
+        string newName = await DisplayPromptAsync("RENAME DECK", "Enter a new name:", "SAVE", "CANCEL", initialValue: _currentDeck.Name);
+        if (!string.IsNullOrWhiteSpace(newName) && newName != _currentDeck.Name)
         {
-            string oldPath = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-            string newPath = Path.Combine(_decksFolder, $"{newName.Trim()}.txt");
-            if (File.Exists(oldPath) && !File.Exists(newPath))
-            {
-                File.Move(oldPath, newPath);
-                ViewDeck(newName.Trim());
-            }
+            await _dbService.RenameDeckAsync(_currentDeck.Id, newName.Trim());
+            _currentDeck.Name = newName.Trim();
+            DeckTitleLabel.Text = _currentDeck.Name.ToUpper();
+            LoadCards();
         }
     }
 
     private async void OnDeleteDeckClicked(object? sender, EventArgs e)
     {
-        bool confirm = await DisplayAlert("DELETE DECK", $"Permanently delete '{_currentDeck}'?", "YES", "NO");
+        if (_currentDeck == null) return;
+        bool confirm = await DisplayAlert("DELETE DECK", $"Permanently delete '{_currentDeck.Name}'?", "YES", "NO");
         if (confirm)
         {
-            string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-            if (File.Exists(path)) File.Delete(path);
+            await _dbService.DeleteDeckAsync(_currentDeck.Id);
             CloseCardsView(null, null!);
         }
     }
@@ -283,13 +261,12 @@ public partial class DecksPage : ContentPage
         var btn = new Button { Text = "GENERATE API", BackgroundColor = Color.FromArgb("#2A9D8F"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
 
         btn.Clicked += async (s, ev) => {
-            if (string.IsNullOrWhiteSpace(editor.Text)) return;
+            if (string.IsNullOrWhiteSpace(editor.Text) || _currentDeck == null) return;
             btn.IsEnabled = false; btn.Text = "RUNNING...";
             try
             {
                 string res = await _aiService.GenerateQuestionsAsync(editor.Text, 10);
-                string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-                File.AppendAllText(path, Environment.NewLine + res, Encoding.UTF8);
+                await _dbService.ImportDeckFromTextAsync(_currentDeck.Name, res, clearExisting: false);
                 PopupBackground.IsVisible = false;
                 LoadCards();
             }
@@ -309,14 +286,14 @@ public partial class DecksPage : ContentPage
         var btn = new Button { Text = "CREATE", BackgroundColor = Color.FromArgb("#457B9D"), FontAttributes = FontAttributes.Bold };
 
         btn.Clicked += async (s, ev) => {
+            if (_currentDeck == null) return;
             string raw = editor.Text?.Trim() ?? "";
             if (!ValidateCardFormat(raw, out string err))
             {
                 await DisplayAlert("VALIDATION ERROR", err, "OK");
                 return;
             }
-            string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-            File.AppendAllText(path, Environment.NewLine + raw, Encoding.UTF8);
+            await _dbService.ImportDeckFromTextAsync(_currentDeck.Name, raw, clearExisting: false);
             PopupBackground.IsVisible = false;
             LoadCards();
         };
@@ -332,10 +309,9 @@ public partial class DecksPage : ContentPage
         var editor = new Editor { HeightRequest = 180, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "MERGE / SAVE", BackgroundColor = Color.FromArgb("#A8DADC"), TextColor = Color.FromArgb("#1D3557"), FontAttributes = FontAttributes.Bold };
 
-        btn.Clicked += (s, ev) => {
-            if (string.IsNullOrWhiteSpace(editor.Text)) return;
-            string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-            File.WriteAllText(path, editor.Text, Encoding.UTF8);
+        btn.Clicked += async (s, ev) => {
+            if (string.IsNullOrWhiteSpace(editor.Text) || _currentDeck == null) return;
+            await _dbService.ImportDeckFromTextAsync(_currentDeck.Name, editor.Text, clearExisting: false);
             PopupBackground.IsVisible = false;
             LoadCards();
         };
@@ -347,20 +323,23 @@ public partial class DecksPage : ContentPage
 
     private void OpenExportPopup(object? sender, EventArgs e)
     {
-        string path = Path.Combine(_decksFolder, $"{_currentDeck}.txt");
-        string contents = File.Exists(path) ? File.ReadAllText(path) : "";
+        if (_currentDeck == null) return;
+        Task.Run(async () => {
+            string contents = await _dbService.ExportDeckToTextAsync(_currentDeck.Id);
+            MainThread.BeginInvokeOnMainThread(() => {
+                var label = new Label { Text = "EXPORT DECK TEXT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+                var editor = new Editor { Text = contents, IsReadOnly = true, HeightRequest = 180, BackgroundColor = Colors.Black, TextColor = Colors.White };
+                var btn = new Button { Text = "COPY TO CLIPBOARD", BackgroundColor = Color.FromArgb("#1D3557"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
 
-        var label = new Label { Text = "EXPORT DECK TEXT:", TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
-        var editor = new Editor { Text = contents, IsReadOnly = true, HeightRequest = 180, BackgroundColor = Colors.Black, TextColor = Colors.White };
-        var btn = new Button { Text = "COPY TO CLIPBOARD", BackgroundColor = Color.FromArgb("#1D3557"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
+                btn.Clicked += async (s, ev) => {
+                    await Clipboard.Default.SetTextAsync(contents);
+                    PopupBackground.IsVisible = false;
+                };
 
-        btn.Clicked += async (s, ev) => {
-            await Clipboard.Default.SetTextAsync(contents);
-            PopupBackground.IsVisible = false;
-        };
-
-        var layout = new VerticalStackLayout { Spacing = 10 };
-        layout.Children.Add(label); layout.Children.Add(editor); layout.Children.Add(btn);
-        ShowPopup(layout);
+                var layout = new VerticalStackLayout { Spacing = 10 };
+                layout.Children.Add(label); layout.Children.Add(editor); layout.Children.Add(btn);
+                ShowPopup(layout);
+            });
+        });
     }
 }

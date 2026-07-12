@@ -5,17 +5,8 @@
              Title="GAME SETUP CONFIGURATIONS"
              BackgroundColor="#121212">
 
-    <Grid RowDefinitions="Auto, *">
-        <Grid Grid.Row="0" Padding="15,10,15,0" BackgroundColor="#121212">
-            <Button Text="← BACK" Clicked="OnUniversalBackClicked" 
-                    HorizontalOptions="Start" VerticalOptions="Center"
-                    BackgroundColor="#333" TextColor="White" HeightRequest="40" Padding="15,0"
-                    FontAttributes="Bold"/>
-            <Label Text="GAME SETUP" FontSize="20" FontAttributes="Bold" TextColor="White" 
-                   HorizontalOptions="Center" VerticalOptions="Center"/>
-        </Grid>
-
-        <ScrollView Grid.Row="1" Padding="25">
+    <Grid>
+        <ScrollView Padding="25">
             <VerticalStackLayout Spacing="18">
 
                 <Label Text="SELECT GAME DIFFICULTY:" TextColor="White" FontAttributes="Bold" FontSize="14"/>
@@ -76,7 +67,7 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <Grid x:Name="SetupPopupOverlay" Grid.RowSpan="2" BackgroundColor="#C0000000" IsVisible="False">
+        <Grid x:Name="SetupPopupOverlay" BackgroundColor="#C0000000" IsVisible="False">
             <Grid.GestureRecognizers>
                 <TapGestureRecognizer Tapped="CloseSetupPopup"/>
             </Grid.GestureRecognizers>

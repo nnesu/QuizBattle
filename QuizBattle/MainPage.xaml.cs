@@ -40,29 +40,19 @@ public partial class MainPage : ContentPage
             OptionButton4
         };
 
-        // react when the Lives layout size changes so we can compute a responsive heart size
         LivesLayout.SizeChanged += LivesLayout_SizeChanged;
     }
 
     private void LivesLayout_SizeChanged(object? sender, EventArgs e)
     {
-        // Only compute when we know the intended max number of hearts and layout width is measured
         if (startingLives <= 0 || LivesLayout.Width <= 0)
             return;
 
-        // total space used by spacing between hearts
         double totalSpacing = heartSpacing * Math.Max(0, startingLives - 1);
-
-        // available width inside the LivesLayout for hearts
         double availableWidth = Math.Max(0, LivesLayout.Width - totalSpacing);
-
-        // compute candidate size per heart
         double candidate = availableWidth / startingLives;
-
-        // clamp into reasonable bounds so hearts remain usable on very small/large widths
         double computed = Math.Clamp(candidate, heartMinSize, heartMaxSize);
 
-        // update if changed meaningfully
         if (Math.Abs(computed - heartSize) > 0.5)
         {
             heartSize = computed;
@@ -73,14 +63,12 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
         await StartBattle();
     }
 
     private async void BattleTimerTick(object? sender, EventArgs e)
     {
         timeRemaining--;
-
         UpdateTimerLabel();
 
         if (timeRemaining > 0)
@@ -88,9 +76,8 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        await HandleDefeat(
-            "Time's Up!",
-            "You ran out of time.");
+        battleTimer?.Stop();
+        await HandleDefeat("TIME'S UP!", "YOU RAN OUT OF TIME.");
     }
 
     private async Task StartBattle()
@@ -103,25 +90,20 @@ public partial class MainPage : ContentPage
         }
 
         QuestionLoader loader = new QuestionLoader();
-
-        // ROUTE DYNAMIC FILE SELECTION VIA APP STATE MODELS Logic
         string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
             ? "QuestionList.txt"
             : GameSettings.SelectedDeckName;
 
         battleQuestions = await loader.LoadQuestionsAsync(deckFile);
 
-        bossHP = battleQuestions.Count;
+        bossHP = 5;
 
         playerLives = GameSettings.PlayerLives;
-        startingLives = GameSettings.PlayerLives; // remember starting lives so sizing is stable
+        startingLives = GameSettings.PlayerLives;
 
         currentQuestion = null;
-
         AnswerEntry.Text = string.Empty;
-
         ResultLabel.Text = string.Empty;
-
         selectedOptions.Clear();
 
         foreach (Button button in optionButtons)
@@ -130,31 +112,22 @@ public partial class MainPage : ContentPage
         }
 
         UpdateLabels();
-
         MasteryLabel.Text = string.Empty;
 
         if (battleTimer != null)
         {
             battleTimer.Stop();
             battleTimer.Tick -= BattleTimerTick;
+            battleTimer = null;
         }
-
-        timeRemaining = GameSettings.TimeLimitSeconds;
-
-        UpdateTimerLabel();
 
         if (GameSettings.TimeLimitSeconds != -1)
         {
             battleTimer = Dispatcher.CreateTimer();
-
             battleTimer.Interval = TimeSpan.FromSeconds(1);
-
             battleTimer.Tick += BattleTimerTick;
-
-            battleTimer.Start();
         }
 
-        // Force a size-based recompute on start (in case layout already measured)
         if (LivesLayout.Width > 0)
             LivesLayout_SizeChanged(LivesLayout, EventArgs.Empty);
 
@@ -172,11 +145,7 @@ public partial class MainPage : ContentPage
 
         battleTimer?.Stop();
 
-        bool retry = await DisplayAlert(
-            title,
-            message,
-            "Retry",
-            "Leave");
+        bool retry = await DisplayAlert(title, message, "RETRY", "LEAVE");
 
         if (retry)
         {
@@ -184,11 +153,7 @@ public partial class MainPage : ContentPage
         }
         else
         {
-            bool confirm = await DisplayAlert(
-                "Admit defeat for now?",
-                "",
-                "Yes",
-                "No");
+            bool confirm = await DisplayAlert("ADMIT DEFEAT FOR NOW?", "", "YES", "NO");
 
             if (confirm)
             {
@@ -212,11 +177,7 @@ public partial class MainPage : ContentPage
 
         battleTimer?.Stop();
 
-        bool retry = await DisplayAlert(
-            "Victory!",
-            "Play again?",
-            "Retry",
-            "Main Menu");
+        bool retry = await DisplayAlert("VICTORY!", "PLAY AGAIN?", "RETRY", "MAIN MENU");
 
         if (retry)
         {
@@ -228,15 +189,13 @@ public partial class MainPage : ContentPage
         }
     }
 
-    //This is for health indicators only
     private void UpdateLabels()
     {
-        BossLabel.Text = $"Boss HP: {bossHP}";
+        BossLabel.Text = $"BOSS HP: {bossHP}";
 
         if (GameSettings.IsZenMode)
         {
-            // Zen mode -> show text infinity, hide hearts
-            LivesLabel.Text = "Lives: ∞";
+            LivesLabel.Text = "LIVES: ∞";
             LivesLabel.IsVisible = true;
             LivesLayout.IsVisible = false;
         }
@@ -244,22 +203,15 @@ public partial class MainPage : ContentPage
         {
             LivesLabel.IsVisible = false;
             LivesLayout.IsVisible = true;
-            // Update playerLives display as hearts
             UpdateLivesDisplay();
         }
     }
 
-    // render filled heart images according to playerLives
     private void UpdateLivesDisplay()
     {
         LivesLayout.Children.Clear();
+        double size = heartSize <= 0 ? 28 : heartSize;
 
-        // ensure a reasonable heartSize if layout isn't measured yet
-        double size = heartSize;
-        if (size <= 0)
-            size = 28;
-
-        // show filled hearts for remaining lives
         for (int i = 0; i < playerLives; i++)
         {
             var img = new Image
@@ -270,11 +222,9 @@ public partial class MainPage : ContentPage
                 Aspect = Aspect.AspectFit,
                 Margin = new Thickness(0, 0, heartSpacing, 0)
             };
-
             LivesLayout.Children.Add(img);
         }
 
-        // If images are not present, show a Unicode fallback
         if (LivesLayout.Children.Count == 0)
         {
             LivesLayout.Children.Add(new Label
@@ -287,8 +237,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    //Needed for medium and hard difficulty
-    //where a question needs to be answered correctly more than once before it gets counted
     private void UpdateMasteryLabel()
     {
         if (currentQuestion == null)
@@ -296,30 +244,27 @@ public partial class MainPage : ContentPage
             MasteryLabel.Text = string.Empty;
             return;
         }
-
-        MasteryLabel.Text =
-            $"Question Mastery: {currentQuestion.CorrectProgress} / {GameSettings.CorrectAnswersRequired}";
+        MasteryLabel.Text = $"QUESTION MASTERY: {currentQuestion.CorrectProgress} / {GameSettings.CorrectAnswersRequired}";
     }
 
     private void UpdateTimerLabel()
     {
         if (GameSettings.TimeLimitSeconds == -1)
         {
-            TimeLabel.Text = "Time: ∞";
+            TimeLabel.Text = "TIME: ∞";
             return;
         }
-
         TimeSpan time = TimeSpan.FromSeconds(timeRemaining);
-
-        TimeLabel.Text = $"Time: {time:mm\\:ss}";
+        TimeLabel.Text = $"TIME: {time:mm\\:ss}";
     }
 
     private void NextQuestion()
     {
         if (battleQuestions.Count == 0)
         {
-            QuestionLabel.Text = "You Win!";
+            QuestionLabel.Text = "YOU WIN!";
             AnswerEntry.IsEnabled = false;
+            battleTimer?.Stop();
             return;
         }
 
@@ -342,10 +287,8 @@ public partial class MainPage : ContentPage
         currentQuestion = nextQuestion;
         currentQuestion.TimesAsked++;
 
-        // Reset the UI
         AnswerEntry.IsVisible = false;
         MultipleChoiceLayout.IsVisible = false;
-
         AnswerEntry.Text = string.Empty;
         selectedOptions.Clear();
 
@@ -355,12 +298,9 @@ public partial class MainPage : ContentPage
         }
 
         ResultLabel.Text = string.Empty;
-
         QuestionLabel.Text = currentQuestion.Text;
-
         UpdateMasteryLabel();
 
-        // Display the appropriate input controls
         if (currentQuestion.Type == QuestionType.Identification)
         {
             AnswerEntry.IsVisible = true;
@@ -370,13 +310,7 @@ public partial class MainPage : ContentPage
         {
             MultipleChoiceLayout.IsVisible = true;
 
-            Button[] buttons =
-            {
-                OptionButton1,
-                OptionButton2,
-                OptionButton3,
-                OptionButton4
-            };
+            Button[] buttons = { OptionButton1, OptionButton2, OptionButton3, OptionButton4 };
 
             for (int index = 0; index < buttons.Length; index++)
             {
@@ -390,6 +324,18 @@ public partial class MainPage : ContentPage
                     buttons[index].IsVisible = false;
                 }
             }
+        }
+
+        if (GameSettings.TimeLimitSeconds != -1 && battleTimer != null)
+        {
+            battleTimer.Stop();
+            timeRemaining = GameSettings.TimeLimitSeconds;
+            UpdateTimerLabel();
+            battleTimer.Start();
+        }
+        else
+        {
+            UpdateTimerLabel();
         }
     }
 
@@ -417,14 +363,14 @@ public partial class MainPage : ContentPage
         }
 
         string playerAnswer = AnswerEntry.Text?.Trim() ?? string.Empty;
-
         bool isCorrect = false;
 
         if (currentQuestion.Type == QuestionType.Identification)
         {
             if (string.IsNullOrWhiteSpace(playerAnswer))
             {
-                ResultLabel.Text = "Please enter an answer.";
+                ResultLabel.Text = "PLEASE ENTER AN ANSWER.";
+                ResultLabel.TextColor = Colors.Orange;
                 return;
             }
 
@@ -435,7 +381,8 @@ public partial class MainPage : ContentPage
         {
             if (selectedOptions.Count == 0)
             {
-                ResultLabel.Text = "Please select at least one answer.";
+                ResultLabel.Text = "PLEASE SELECT AT LEAST ONE ANSWER.";
+                ResultLabel.TextColor = Colors.Orange;
                 return;
             }
 
@@ -446,9 +393,12 @@ public partial class MainPage : ContentPage
             isCorrect = selectedOptions.SetEquals(correctAnswers);
         }
 
+        battleTimer?.Stop();
+
         if (isCorrect)
         {
-            ResultLabel.Text = "Correct!";
+            ResultLabel.Text = "CORRECT!";
+            ResultLabel.TextColor = Colors.Green;
 
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
@@ -463,9 +413,12 @@ public partial class MainPage : ContentPage
         }
         else
         {
-            ResultLabel.Text = "Incorrect!";
+            ResultLabel.Text = "INCORRECT!";
+            ResultLabel.TextColor = Colors.Red;
 
             currentQuestion.TimesIncorrect++;
+
+            bossHP++;
 
             if (!GameSettings.IsZenMode)
             {
@@ -477,10 +430,7 @@ public partial class MainPage : ContentPage
 
         if (playerLives <= 0)
         {
-            await HandleDefeat(
-                "Game Over!",
-                "You ran out of lives.");
-
+            await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
             return;
         }
 
@@ -494,18 +444,20 @@ public partial class MainPage : ContentPage
         NextQuestion();
     }
 
+    private void OnGiveUpClicked(object? sender, EventArgs e)
+    {
+        OnBackButtonPressed();
+    }
+
     protected override bool OnBackButtonPressed()
     {
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            bool confirm = await DisplayAlert(
-                "Battle in Progress!",
-                "Confirm return to menu?",
-                "Yes",
-                "No");
+            bool confirm = await DisplayAlert("BATTLE IN PROGRESS!", "CONFIRM RETURN TO MENU?", "YES", "NO");
 
             if (confirm)
             {
+                battleTimer?.Stop();
                 await Shell.Current.GoToAsync("//MainMenu");
             }
         });

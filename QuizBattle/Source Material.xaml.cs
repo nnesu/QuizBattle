@@ -7,28 +7,14 @@ namespace QuizBattle;
 public partial class SourceMaterial : ContentPage
 {
     private readonly AIService _aiService = new AIService();
-    private readonly string _decksDir = Path.Combine(FileSystem.Current.AppDataDirectory, "Decks");
+    private readonly DatabaseService _dbService = new DatabaseService();
     private bool _isChangingDifficulty = false;
 
     public SourceMaterial()
     {
         InitializeComponent();
-        if (!Directory.Exists(_decksDir)) Directory.CreateDirectory(_decksDir);
-
         GameSettings.SelectedDeckName = "";
         RefreshDropdownItems();
-    }
-
-    private async void OnUniversalBackClicked(object? sender, EventArgs e)
-    {
-        if (Navigation.NavigationStack.Count > 1)
-        {
-            await Navigation.PopAsync();
-        }
-        else
-        {
-            await Shell.Current.GoToAsync("//MainMenu");
-        }
     }
 
     private void OnDifficultyChanged(object? sender, CheckedChangedEventArgs e)
@@ -89,17 +75,16 @@ public partial class SourceMaterial : ContentPage
         if (DropdownScrollContainer.IsVisible) RefreshDropdownItems();
     }
 
-    private void RefreshDropdownItems()
+    private async void RefreshDropdownItems()
     {
         DropdownStackList.Children.Clear();
-        var files = Directory.GetFiles(_decksDir, "*.txt");
+        var decks = await _dbService.GetDecksAsync();
 
-        foreach (var file in files)
+        foreach (var deck in decks)
         {
-            string name = Path.GetFileNameWithoutExtension(file);
             var rowBtn = new Button
             {
-                Text = name.ToUpper(),
+                Text = deck.Name.ToUpper(),
                 TextColor = Colors.White,
                 BackgroundColor = Colors.Transparent,
                 HorizontalOptions = LayoutOptions.Fill,
@@ -109,8 +94,8 @@ public partial class SourceMaterial : ContentPage
             };
 
             rowBtn.Clicked += (s, e) => {
-                GameSettings.SelectedDeckName = name;
-                DeckDropdownButton.Text = $"ACTIVE DECK: {name.ToUpper()} ▾";
+                GameSettings.SelectedDeckName = deck.Name;
+                DeckDropdownButton.Text = $"ACTIVE DECK: {deck.Name.ToUpper()} ▾";
                 DropdownScrollContainer.IsVisible = false;
             };
 
@@ -132,8 +117,7 @@ public partial class SourceMaterial : ContentPage
             try
             {
                 string results = await _aiService.GenerateQuestionsAsync(inputNotes.Text, 15);
-                string writePath = Path.Combine(_decksDir, $"{title.Text.Trim()}.txt");
-                File.WriteAllText(writePath, results, Encoding.UTF8);
+                await _dbService.ImportDeckFromTextAsync(title.Text.Trim(), results);
 
                 GameSettings.SelectedDeckName = title.Text.Trim();
                 DeckDropdownButton.Text = $"ACTIVE DECK: {GameSettings.SelectedDeckName.ToUpper()} ▾";
@@ -154,10 +138,9 @@ public partial class SourceMaterial : ContentPage
         var streamData = new Editor { Placeholder = "Paste exported text format...", HeightRequest = 140, TextColor = Colors.White, BackgroundColor = Colors.Black };
         var saveBtn = new Button { Text = "SAVE DECK", BackgroundColor = Colors.DodgerBlue, TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
 
-        saveBtn.Clicked += (s, ev) => {
+        saveBtn.Clicked += async (s, ev) => {
             if (string.IsNullOrWhiteSpace(importName.Text) || string.IsNullOrWhiteSpace(streamData.Text)) return;
-            string targetPath = Path.Combine(_decksDir, $"{importName.Text.Trim()}.txt");
-            File.WriteAllText(targetPath, streamData.Text, Encoding.UTF8);
+            await _dbService.ImportDeckFromTextAsync(importName.Text.Trim(), streamData.Text);
 
             GameSettings.SelectedDeckName = importName.Text.Trim();
             DeckDropdownButton.Text = $"ACTIVE DECK: {GameSettings.SelectedDeckName.ToUpper()} ▾";
@@ -178,8 +161,15 @@ public partial class SourceMaterial : ContentPage
             return;
         }
 
-        string fullCheckPath = Path.Combine(_decksDir, $"{GameSettings.SelectedDeckName}.txt");
-        if (!File.Exists(fullCheckPath) || File.ReadLines(fullCheckPath).Count(l => !string.IsNullOrWhiteSpace(l)) == 0)
+        var deck = await _dbService.GetDeckByNameAsync(GameSettings.SelectedDeckName);
+        if (deck == null)
+        {
+            await DisplayAlert("DECK NOT FOUND", "Selected deck does not exist in the database.", "OK");
+            return;
+        }
+
+        var questions = await _dbService.GetQuestionsForDeckAsync(deck.Id);
+        if (questions.Count == 0)
         {
             await DisplayAlert("EMPTY DECK", "The selected deck contains no question cards.", "OK");
             return;

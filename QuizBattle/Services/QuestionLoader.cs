@@ -5,88 +5,60 @@ namespace QuizBattle.Services
 {
     public class QuestionLoader
     {
-        public async Task<List<Question>> LoadQuestionsAsync(string fileName)
+        private readonly DatabaseService _dbService = new DatabaseService();
+
+        public async Task<List<Question>> LoadQuestionsAsync(string deckName)
         {
             List<Question> questions = new List<Question>();
 
-            // Clean filename extension
-            string cleanName = fileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
-                ? fileName
-                : $"{fileName}.txt";
-
-            // Check Decks directory first
-            string decksDir = Path.Combine(FileSystem.Current.AppDataDirectory, "Decks");
-            string filePath = Path.Combine(decksDir, cleanName);
-
-            // Fallback to AppDataDirectory root
-            if (!File.Exists(filePath))
-            {
-                filePath = Path.Combine(FileSystem.Current.AppDataDirectory, cleanName);
-            }
-
-            if (!File.Exists(filePath))
-            {
-                Debug.WriteLine($"[QuestionLoader] File not found: {filePath}");
-                return questions;
-            }
-
             try
             {
-                using Stream stream = File.OpenRead(filePath);
-                using StreamReader reader = new StreamReader(stream);
+                await _dbService.InitAsync();
+                string cleanDeckName = Path.GetFileNameWithoutExtension(deckName);
 
-                while (!reader.EndOfStream)
+                var deck = await _dbService.GetDeckByNameAsync(cleanDeckName);
+                if (deck == null)
                 {
-                    string? line = await reader.ReadLineAsync();
+                    Debug.WriteLine($"[QuestionLoader] Deck '{cleanDeckName}' not found in database.");
+                    return questions;
+                }
 
-                    if (string.IsNullOrWhiteSpace(line)) continue;
+                var dbQuestions = await _dbService.GetQuestionsForDeckAsync(deck.Id);
 
-                    string[] parts = line.Split('|');
-                    Question question = new Question();
-
-                    switch (parts[0].Trim())
+                foreach (var entity in dbQuestions)
+                {
+                    var q = new Question
                     {
-                        case "Identification":
-                            {
-                                if (parts.Length < 3) continue;
-                                question.Type = QuestionType.Identification;
-                                question.Text = parts[1].Trim();
-                                question.CorrectAnswers.Add(parts[2].Trim());
-                                break;
-                            }
+                        Text = entity.Text,
+                        TimesAsked = entity.TimesAsked,
+                        TimesCorrect = entity.TimesCorrect,
+                        TimesIncorrect = entity.TimesIncorrect,
+                        CorrectProgress = entity.CorrectProgress
+                    };
 
-                        case "MultipleChoice":
-                            {
-                                question.Type = QuestionType.MultipleChoice;
-                                question.Text = parts[1].Trim();
+                    if (entity.Type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
+                    {
+                        q.Type = QuestionType.Identification;
+                        q.CorrectAnswers.Add(entity.AnswersRaw);
+                    }
+                    else if (entity.Type.Equals("MultipleChoice", StringComparison.OrdinalIgnoreCase))
+                    {
+                        q.Type = QuestionType.MultipleChoice;
+                        q.CorrectAnswers.Add(entity.AnswersRaw);
 
-                                int answerIndex = Array.IndexOf(parts, "ANS");
-
-                                if (answerIndex == -1) continue;
-
-                                for (int index = 2; index < answerIndex; index++)
-                                {
-                                    question.Options.Add(parts[index].Trim());
-                                }
-
-                                for (int index = answerIndex + 1; index < parts.Length; index++)
-                                {
-                                    question.CorrectAnswers.Add(parts[index].Trim());
-                                }
-
-                                break;
-                            }
-
-                        default:
-                            continue;
+                        string[] options = entity.OptionsRaw.Split('|');
+                        foreach (string opt in options)
+                        {
+                            q.Options.Add(opt);
+                        }
                     }
 
-                    questions.Add(question);
+                    questions.Add(q);
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error parsing question file: {ex.Message}");
+                Debug.WriteLine($"Error loading questions from database: {ex.Message}");
             }
 
             return questions;

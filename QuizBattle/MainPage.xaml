@@ -3,11 +3,21 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="QuizBattle.MainPage"
-    Title="Quiz Battle"
+    Title="QUIZ BATTLE"
     BackgroundColor="#121212">
 
     <ScrollView Padding="20">
         <VerticalStackLayout Spacing="15">
+
+            <Button
+                Text="GIVE UP / BACK"
+                Clicked="OnGiveUpClicked"
+                BackgroundColor="#E63946"
+                TextColor="White"
+                FontAttributes="Bold"
+                HorizontalOptions="Start"
+                HeightRequest="40"
+                Padding="15,0"/>
 
             <Label
                 x:Name="BossLabel"
@@ -67,30 +77,34 @@
                     x:Name="OptionButton1"
                     Clicked="OptionClicked"
                     BackgroundColor="LightGray"
-                    TextColor="Black"/>
+                    TextColor="Black"
+                    FontAttributes="Bold"/>
 
                 <Button
                     x:Name="OptionButton2"
                     Clicked="OptionClicked"
                     BackgroundColor="LightGray"
-                    TextColor="Black"/>
+                    TextColor="Black"
+                    FontAttributes="Bold"/>
 
                 <Button
                     x:Name="OptionButton3"
                     Clicked="OptionClicked"
                     BackgroundColor="LightGray"
-                    TextColor="Black"/>
+                    TextColor="Black"
+                    FontAttributes="Bold"/>
 
                 <Button
                     x:Name="OptionButton4"
                     Clicked="OptionClicked"
                     BackgroundColor="LightGray"
-                    TextColor="Black"/>
+                    TextColor="Black"
+                    FontAttributes="Bold"/>
 
             </VerticalStackLayout>
 
             <Button
-                Text="Submit"
+                Text="SUBMIT"
                 Clicked="SubmitAnswer"
                 BackgroundColor="#2A9D8F"
                 TextColor="White"
