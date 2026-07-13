@@ -58,11 +58,11 @@ public partial class SourceMaterial : ContentPage
             GameSettings.IsZenMode = false;
             GameSettings.PlayerLives = 5;
             GameSettings.CorrectAnswersRequired = 1;
-            GameSettings.TimeLimitSeconds = 15;
+            GameSettings.TimeLimitSeconds = 30;
             GameSettings.MaxQuestions = 20;
 
-            TimerTitleLabel.Text = "Timer (Default: 15s):";
-            TimerEntry.Text = "15";
+            TimerTitleLabel.Text = "Timer (Default: 30s):";
+            TimerEntry.Text = "30";
             TimerEntry.IsEnabled = true;
         }
         else if (level == "Medium")
@@ -166,6 +166,11 @@ public partial class SourceMaterial : ContentPage
     }
 
     private void CloseSetupPopup(object? sender, EventArgs e) => SetupPopupOverlay.IsVisible = false;
+
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PopAsync();
+    }
 
     // generate deck modal
     private void OpenGenerateDeckModal(object? sender, EventArgs e)
