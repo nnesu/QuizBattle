@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace QuizBattle.Models
+﻿namespace QuizBattle.Models
 {
     public static class GameSettings
     {
