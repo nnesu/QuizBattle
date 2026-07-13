@@ -7,7 +7,6 @@ namespace QuizBattle;
 public partial class MainPage : ContentPage
 {
     private readonly Random random = new();
-    private readonly List<Question>? loadedQuestions;
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
     private int bossHP;
@@ -17,8 +16,8 @@ public partial class MainPage : ContentPage
 
     private HashSet<string> selectedOptions = new HashSet<string>();
     private Button[] optionButtons = Array.Empty<Button>();
-    private readonly Color defaultOptionColor = Color.FromArgb("#1A2644");
-    private readonly Color selectedOptionColor = Color.FromArgb("#0F766E");
+    private readonly Color defaultOptionColor = Colors.LightGray;
+    private readonly Color selectedOptionColor = Colors.Green;
 
     private IDispatcherTimer? battleTimer;
     private int timeRemaining;
@@ -28,15 +27,11 @@ public partial class MainPage : ContentPage
     private readonly double heartMaxSize = 48;
     private readonly double heartSpacing = 4;
 
-    public MainPage() : this(null)
-    {
-    }
+    private bool heartSizeLocked = false;
 
-    public MainPage(IEnumerable<Question>? questions)
+    public MainPage()
     {
         InitializeComponent();
-
-        loadedQuestions = questions?.Select(CloneQuestion).ToList();
 
         optionButtons = new Button[]
         {
@@ -59,9 +54,13 @@ public partial class MainPage : ContentPage
         double candidate = availableWidth / startingLives;
         double computed = Math.Clamp(candidate, heartMinSize, heartMaxSize);
 
+        if (heartSizeLocked)
+            return;
+
         if (Math.Abs(computed - heartSize) > 0.5)
         {
             heartSize = computed;
+            heartSizeLocked = true;
             UpdateLivesDisplay();
         }
     }
@@ -97,26 +96,41 @@ public partial class MainPage : ContentPage
             button.IsEnabled = true;
         }
 
-        if (loadedQuestions != null)
+        QuestionLoader loader = new QuestionLoader();
+        string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
+            ? "QuestionList.txt"
+            : GameSettings.SelectedDeckName;
+
+        battleQuestions = await loader.LoadQuestionsAsync(deckFile);
+
+        // reset question mastery progress
+        foreach (var q in battleQuestions)
         {
-            // The setup page already validated and loaded this deck. Reusing it avoids a
-            // second database read that could leave the battle page waiting indefinitely.
-            battleQuestions = loadedQuestions.Select(CloneQuestion).ToList();
+            q.CorrectProgress = 0;
+        }
+
+        // assign boss hp based on difficulty settings
+        if (GameSettings.IsZenMode || GameSettings.CurrentDifficulty == "Zen")
+        {
+            bossHP = -1; // represents infinite hp
+        }
+        else if (GameSettings.CurrentDifficulty == "Easy")
+        {
+            bossHP = 10;
+        }
+        else if (GameSettings.CurrentDifficulty == "Hard")
+        {
+            bossHP = 20;
         }
         else
         {
-            QuestionLoader loader = new QuestionLoader();
-            string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
-                ? "QuestionList.txt"
-                : GameSettings.SelectedDeckName;
-
-            battleQuestions = await loader.LoadQuestionsAsync(deckFile);
+            bossHP = 15; // default medium hp
         }
-
-        bossHP = 5;
 
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
+
+        heartSizeLocked = false;
 
         currentQuestion = null;
         AnswerEntry.Text = string.Empty;
@@ -138,7 +152,7 @@ public partial class MainPage : ContentPage
             battleTimer = null;
         }
 
-        if (GameSettings.TimeLimitSeconds != -1)
+        if (GameSettings.TimeLimitSeconds != -1 && !GameSettings.IsZenMode)
         {
             battleTimer = Dispatcher.CreateTimer();
             battleTimer.Interval = TimeSpan.FromSeconds(1);
@@ -149,22 +163,6 @@ public partial class MainPage : ContentPage
             LivesLayout_SizeChanged(LivesLayout, EventArgs.Empty);
 
         NextQuestion();
-    }
-
-    private static Question CloneQuestion(Question source)
-    {
-        return new Question
-        {
-            Text = source.Text,
-            Type = source.Type,
-            Options = new List<string>(source.Options),
-            CorrectAnswers = new List<string>(source.CorrectAnswers),
-            TimesAsked = source.TimesAsked,
-            TimesCorrect = source.TimesCorrect,
-            TimesIncorrect = source.TimesIncorrect,
-            CorrectProgress = source.CorrectProgress,
-            IsCompleted = source.IsCompleted
-        };
     }
 
     // handle defeat dialog
@@ -226,7 +224,15 @@ public partial class MainPage : ContentPage
 
     private void UpdateLabels()
     {
-        BossLabel.Text = $"BOSS HP: {bossHP}";
+        // display infinite symbol for zen mode
+        if (GameSettings.IsZenMode || bossHP < 0)
+        {
+            BossLabel.Text = "BOSS HP: ∞";
+        }
+        else
+        {
+            BossLabel.Text = $"BOSS HP: {bossHP}";
+        }
 
         if (GameSettings.IsZenMode)
         {
@@ -285,7 +291,7 @@ public partial class MainPage : ContentPage
 
     private void UpdateTimerLabel()
     {
-        if (GameSettings.TimeLimitSeconds == -1)
+        if (GameSettings.TimeLimitSeconds == -1 || GameSettings.IsZenMode)
         {
             TimeLabel.Text = "TIME: ∞";
             return;
@@ -297,11 +303,12 @@ public partial class MainPage : ContentPage
     // load next question
     private void NextQuestion()
     {
-        if (battleQuestions.Count == 0)
+        if (battleQuestions.Count == 0 || (!GameSettings.IsZenMode && bossHP <= 0))
         {
             QuestionLabel.Text = "YOU WIN!";
             AnswerEntry.IsEnabled = false;
             battleTimer?.Stop();
+            _ = HandleVictory();
             return;
         }
 
@@ -363,7 +370,7 @@ public partial class MainPage : ContentPage
             }
         }
 
-        if (GameSettings.TimeLimitSeconds != -1 && battleTimer != null)
+        if (GameSettings.TimeLimitSeconds != -1 && !GameSettings.IsZenMode && battleTimer != null)
         {
             battleTimer.Stop();
             timeRemaining = GameSettings.TimeLimitSeconds;
@@ -441,11 +448,16 @@ public partial class MainPage : ContentPage
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
 
+            // reduce boss hp if not zen mode
+            if (!GameSettings.IsZenMode && bossHP > 0)
+            {
+                bossHP--;
+            }
+
             UpdateMasteryLabel();
 
             if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
-                bossHP--;
                 battleQuestions.Remove(currentQuestion);
             }
         }
@@ -456,8 +468,6 @@ public partial class MainPage : ContentPage
 
             currentQuestion.TimesIncorrect++;
 
-            bossHP++;
-
             if (!GameSettings.IsZenMode)
             {
                 playerLives--;
@@ -466,13 +476,13 @@ public partial class MainPage : ContentPage
 
         UpdateLabels();
 
-        if (playerLives <= 0)
+        if (!GameSettings.IsZenMode && playerLives <= 0)
         {
             await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
             return;
         }
 
-        if (bossHP <= 0)
+        if (!GameSettings.IsZenMode && bossHP <= 0)
         {
             await HandleVictory();
             return;
