@@ -103,7 +103,29 @@ public partial class MainPage : ContentPage
 
         battleQuestions = await loader.LoadQuestionsAsync(deckFile);
 
-        bossHP = 5;
+        // reset question mastery progress
+        foreach (var q in battleQuestions)
+        {
+            q.CorrectProgress = 0;
+        }
+
+        // assign boss hp based on difficulty settings
+        if (GameSettings.IsZenMode || GameSettings.CurrentDifficulty == "Zen")
+        {
+            bossHP = -1; // represents infinite hp
+        }
+        else if (GameSettings.CurrentDifficulty == "Easy")
+        {
+            bossHP = 10;
+        }
+        else if (GameSettings.CurrentDifficulty == "Hard")
+        {
+            bossHP = 20;
+        }
+        else
+        {
+            bossHP = 15; // default medium hp
+        }
 
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
@@ -130,7 +152,7 @@ public partial class MainPage : ContentPage
             battleTimer = null;
         }
 
-        if (GameSettings.TimeLimitSeconds != -1)
+        if (GameSettings.TimeLimitSeconds != -1 && !GameSettings.IsZenMode)
         {
             battleTimer = Dispatcher.CreateTimer();
             battleTimer.Interval = TimeSpan.FromSeconds(1);
@@ -202,7 +224,15 @@ public partial class MainPage : ContentPage
 
     private void UpdateLabels()
     {
-        BossLabel.Text = $"BOSS HP: {bossHP}";
+        // display infinite symbol for zen mode
+        if (GameSettings.IsZenMode || bossHP < 0)
+        {
+            BossLabel.Text = "BOSS HP: ∞";
+        }
+        else
+        {
+            BossLabel.Text = $"BOSS HP: {bossHP}";
+        }
 
         if (GameSettings.IsZenMode)
         {
@@ -261,7 +291,7 @@ public partial class MainPage : ContentPage
 
     private void UpdateTimerLabel()
     {
-        if (GameSettings.TimeLimitSeconds == -1)
+        if (GameSettings.TimeLimitSeconds == -1 || GameSettings.IsZenMode)
         {
             TimeLabel.Text = "TIME: ∞";
             return;
@@ -273,11 +303,12 @@ public partial class MainPage : ContentPage
     // load next question
     private void NextQuestion()
     {
-        if (battleQuestions.Count == 0)
+        if (battleQuestions.Count == 0 || (!GameSettings.IsZenMode && bossHP <= 0))
         {
             QuestionLabel.Text = "YOU WIN!";
             AnswerEntry.IsEnabled = false;
             battleTimer?.Stop();
+            _ = HandleVictory();
             return;
         }
 
@@ -339,7 +370,7 @@ public partial class MainPage : ContentPage
             }
         }
 
-        if (GameSettings.TimeLimitSeconds != -1 && battleTimer != null)
+        if (GameSettings.TimeLimitSeconds != -1 && !GameSettings.IsZenMode && battleTimer != null)
         {
             battleTimer.Stop();
             timeRemaining = GameSettings.TimeLimitSeconds;
@@ -417,11 +448,16 @@ public partial class MainPage : ContentPage
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
 
+            // reduce boss hp if not zen mode
+            if (!GameSettings.IsZenMode && bossHP > 0)
+            {
+                bossHP--;
+            }
+
             UpdateMasteryLabel();
 
             if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
-                bossHP--;
                 battleQuestions.Remove(currentQuestion);
             }
         }
@@ -432,8 +468,6 @@ public partial class MainPage : ContentPage
 
             currentQuestion.TimesIncorrect++;
 
-            bossHP++;
-
             if (!GameSettings.IsZenMode)
             {
                 playerLives--;
@@ -442,13 +476,13 @@ public partial class MainPage : ContentPage
 
         UpdateLabels();
 
-        if (playerLives <= 0)
+        if (!GameSettings.IsZenMode && playerLives <= 0)
         {
             await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
             return;
         }
 
-        if (bossHP <= 0)
+        if (!GameSettings.IsZenMode && bossHP <= 0)
         {
             await HandleVictory();
             return;

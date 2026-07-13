@@ -15,35 +15,94 @@ public partial class SourceMaterial : ContentPage
         InitializeComponent();
         GameSettings.SelectedDeckName = "";
         RefreshDropdownItems();
+        ApplyDifficultyPreset("Medium");
     }
 
-    // difficulty checkbox change
+    // handle difficulty checkbox selection
     private void OnDifficultyChanged(object? sender, CheckedChangedEventArgs e)
     {
         if (_isChangingDifficulty || !e.Value) return;
-        _isChangingDifficulty = true;
 
         var cb = sender as CheckBox;
         if (cb == EasyCheck)
         {
-            NormalCheck.IsChecked = false; HardCheck.IsChecked = false;
-            GameSettings.CurrentDifficulty = "Easy";
-            TimerTitleLabel.Text = "Timer (0-600s, Default: 300s):";
-            TimerEntry.Text = "300";
+            ApplyDifficultyPreset("Easy");
         }
-        else if (cb == NormalCheck)
+        else if (cb == MediumCheck)
         {
-            EasyCheck.IsChecked = false; HardCheck.IsChecked = false;
-            GameSettings.CurrentDifficulty = "Normal";
-            TimerTitleLabel.Text = "Timer (0-600s, Default: 150s):";
-            TimerEntry.Text = "150";
+            ApplyDifficultyPreset("Medium");
         }
         else if (cb == HardCheck)
         {
-            EasyCheck.IsChecked = false; NormalCheck.IsChecked = false;
+            ApplyDifficultyPreset("Hard");
+        }
+        else if (cb == ZenCheck)
+        {
+            ApplyDifficultyPreset("Zen");
+        }
+    }
+
+    // apply strict values from matrix
+    private void ApplyDifficultyPreset(string level)
+    {
+        _isChangingDifficulty = true;
+
+        EasyCheck.IsChecked = (level == "Easy");
+        MediumCheck.IsChecked = (level == "Medium");
+        HardCheck.IsChecked = (level == "Hard");
+        ZenCheck.IsChecked = (level == "Zen");
+
+        if (level == "Easy")
+        {
+            GameSettings.CurrentDifficulty = "Easy";
+            GameSettings.IsZenMode = false;
+            GameSettings.PlayerLives = 5;
+            GameSettings.CorrectAnswersRequired = 1;
+            GameSettings.TimeLimitSeconds = 15;
+            GameSettings.MaxQuestions = 20;
+
+            TimerTitleLabel.Text = "Timer (Default: 15s):";
+            TimerEntry.Text = "15";
+            TimerEntry.IsEnabled = true;
+        }
+        else if (level == "Medium")
+        {
+            GameSettings.CurrentDifficulty = "Medium";
+            GameSettings.IsZenMode = false;
+            GameSettings.PlayerLives = 4;
+            GameSettings.CorrectAnswersRequired = 2;
+            GameSettings.TimeLimitSeconds = 15;
+            GameSettings.MaxQuestions = 20;
+
+            TimerTitleLabel.Text = "Timer (Default: 15s):";
+            TimerEntry.Text = "15";
+            TimerEntry.IsEnabled = true;
+        }
+        else if (level == "Hard")
+        {
             GameSettings.CurrentDifficulty = "Hard";
-            TimerTitleLabel.Text = "Timer (0-600s, Default: 100s):";
-            TimerEntry.Text = "100";
+            GameSettings.IsZenMode = false;
+            GameSettings.PlayerLives = 3;
+            GameSettings.CorrectAnswersRequired = 3;
+            GameSettings.TimeLimitSeconds = 7;
+            GameSettings.MaxQuestions = 20;
+
+            TimerTitleLabel.Text = "Timer (Default: 7s):";
+            TimerEntry.Text = "7";
+            TimerEntry.IsEnabled = true;
+        }
+        else if (level == "Zen")
+        {
+            GameSettings.CurrentDifficulty = "Zen";
+            GameSettings.IsZenMode = true;
+            GameSettings.PlayerLives = 999;
+            GameSettings.CorrectAnswersRequired = 3;
+            GameSettings.TimeLimitSeconds = -1;
+            GameSettings.MaxQuestions = 20;
+
+            TimerTitleLabel.Text = "Timer: NO TIMER (ZEN MODE)";
+            TimerEntry.Text = "0";
+            TimerEntry.IsEnabled = false;
         }
 
         _isChangingDifficulty = false;
@@ -52,7 +111,7 @@ public partial class SourceMaterial : ContentPage
     // timer input validation
     private void OnTimerTextChanged(object? sender, TextChangedEventArgs e)
     {
-        if (string.IsNullOrEmpty(e.NewTextValue)) return;
+        if (string.IsNullOrEmpty(e.NewTextValue) || !TimerEntry.IsEnabled) return;
 
         string digitsOnly = new string(e.NewTextValue.Where(char.IsDigit).ToArray());
 
@@ -64,9 +123,9 @@ public partial class SourceMaterial : ContentPage
 
         if (int.TryParse(digitsOnly, out int val))
         {
-            if (val > 600)
+            if (val > 100)
             {
-                TimerEntry.Text = "600";
+                TimerEntry.Text = "100";
             }
         }
     }
@@ -77,7 +136,7 @@ public partial class SourceMaterial : ContentPage
         if (DropdownScrollContainer.IsVisible) RefreshDropdownItems();
     }
 
-    // refresh deck dropdown list
+    // refresh dropdown list
     private async void RefreshDropdownItems()
     {
         DropdownStackList.Children.Clear();
@@ -108,7 +167,7 @@ public partial class SourceMaterial : ContentPage
 
     private void CloseSetupPopup(object? sender, EventArgs e) => SetupPopupOverlay.IsVisible = false;
 
-    // generate deck with ai
+    // generate deck modal
     private void OpenGenerateDeckModal(object? sender, EventArgs e)
     {
         var title = new Entry { Placeholder = "New Deck Name...", TextColor = Colors.White, BackgroundColor = Colors.Black };
@@ -120,7 +179,7 @@ public partial class SourceMaterial : ContentPage
             genBtn.IsEnabled = false; genBtn.Text = "GENERATING DECK...";
             try
             {
-                string results = await _aiService.GenerateQuestionsAsync(inputNotes.Text, 15);
+                string results = await _aiService.GenerateQuestionsAsync(inputNotes.Text, GameSettings.MaxQuestions);
                 await _dbService.ImportDeckFromTextAsync(title.Text.Trim(), results);
 
                 GameSettings.SelectedDeckName = title.Text.Trim();
@@ -136,7 +195,7 @@ public partial class SourceMaterial : ContentPage
         SetupPopupOverlay.IsVisible = true;
     }
 
-    // import deck text
+    // import deck modal
     private void OpenImportDeckModal(object? sender, EventArgs e)
     {
         var importName = new Entry { Placeholder = "Deck Name...", TextColor = Colors.White, BackgroundColor = Colors.Black };
@@ -158,7 +217,7 @@ public partial class SourceMaterial : ContentPage
         SetupPopupOverlay.IsVisible = true;
     }
 
-    // launch battle game session
+    // launch match
     private async void OnFinalLaunchClicked(object? sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName))
@@ -181,22 +240,10 @@ public partial class SourceMaterial : ContentPage
             return;
         }
 
-        if (int.TryParse(TimerEntry.Text, out int parsedTimer))
+        if (!GameSettings.IsZenMode && int.TryParse(TimerEntry.Text, out int parsedTimer))
         {
-            parsedTimer = Math.Clamp(parsedTimer, 0, 600);
-            if (parsedTimer == 0)
-            {
-                GameSettings.IsTimerEnabled = false;
-                GameSettings.TimeLimitSeconds = -1;
-                GameSettings.IsZenMode = true;
-            }
-            else
-            {
-                GameSettings.IsTimerEnabled = true;
-                GameSettings.TimerSeconds = parsedTimer;
-                GameSettings.TimeLimitSeconds = parsedTimer;
-                GameSettings.IsZenMode = false;
-            }
+            parsedTimer = Math.Clamp(parsedTimer, 0, 100);
+            GameSettings.TimeLimitSeconds = parsedTimer == 0 ? -1 : parsedTimer;
         }
 
         await Navigation.PushAsync(new MainPage());
