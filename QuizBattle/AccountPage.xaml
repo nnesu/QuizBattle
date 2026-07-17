@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="QuizBattle.AccountPage">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="30"
+            Spacing="15">
+
+            <Image
+                x:Name="ProfilePicture"
+                Source="dotnet_bot.png"
+                HeightRequest="100"
+                WidthRequest="100"/>        
+
+            <Label
+                x:Name="DisplayNameLabel"
+                FontSize="24"/>
+
+            <Label
+                x:Name="EmailLabel"/>
+
+            <Label
+                Text="Status: Signed In"
+                FontSize="16"/>
+
+            <Button
+                Text="Change Profile Picture"
+                Clicked="EditPicture_Clicked"/>
+
+            <Button
+                Text="Edit Details"
+                Clicked="EditDetails_Clicked"/>
+
+            <Button
+                Text="Sign Out"
+                Clicked="Logout_Clicked"/>
+
+            <Button
+                Text="Delete Account"
+                Clicked="Delete_Clicked"/>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>

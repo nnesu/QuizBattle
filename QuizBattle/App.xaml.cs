@@ -1,4 +1,6 @@
-﻿namespace QuizBattle
+using QuizBattle.Helpers;
+
+namespace QuizBattle
 {
     public partial class App : Application
     {
@@ -9,7 +11,19 @@
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new AppShell());
+            Page initialPage;
+
+            // Check if the user has a valid login token saved
+            if (SessionManager.IsLoggedIn())
+            {
+                initialPage = new AppShell();
+            }
+            else
+            {
+                initialPage = new NavigationPage(new LoginPage());
+            }
+
+            return new Window(initialPage);
         }
     }
 }
