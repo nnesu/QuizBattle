@@ -1,4 +1,4 @@
-﻿using QuizBattle.Models;
+using QuizBattle.Models;
 using QuizBattle.Services;
 using System.Linq;
 
@@ -9,7 +9,10 @@ public partial class MainPage : ContentPage
     private readonly Random random = new();
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
-    private int bossHP;
+
+    // Chnaged these to double to handle proportional damage math smoothly
+    private double bossHP;
+    private double damagePerCorrectAnswer;
 
     private int playerLives;
     private int startingLives;
@@ -109,23 +112,36 @@ public partial class MainPage : ContentPage
             q.CorrectProgress = 0;
         }
 
-        // assign boss hp based on difficulty settings
+        // 1. Assign base maximum boss HP pool based on difficulty settings
+        double maxBossHP;
         if (GameSettings.IsZenMode || GameSettings.CurrentDifficulty == "Zen")
         {
-            bossHP = -1; // represents infinite hp
+            maxBossHP = -1; // represents infinite hp
         }
         else if (GameSettings.CurrentDifficulty == "Easy")
         {
-            bossHP = 10;
+            maxBossHP = 100.0;
         }
         else if (GameSettings.CurrentDifficulty == "Hard")
         {
-            bossHP = 20;
+            maxBossHP = 100.0;
         }
         else
         {
-            bossHP = 15; // default medium hp
+            maxBossHP = 100.0; // standard baseline health pool
         }
+
+        bossHP = maxBossHP;
+
+        // 2. Calculate the exact total correct hits needed to empty the deck
+        // (Deck Count * answers required per question)
+        int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
+
+        if (totalHitsNeeded <= 0)
+            totalHitsNeeded = 1; // Prevent division by zero errors
+
+        // 3. Compute dynamic damage value per successful hit
+        damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
 
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
@@ -231,7 +247,8 @@ public partial class MainPage : ContentPage
         }
         else
         {
-            BossLabel.Text = $"BOSS HP: {bossHP}";
+            // Math.Ceiling ensures it shows 0 only when fully dead
+            BossLabel.Text = $"BOSS HP: {Math.Ceiling(bossHP)}";
         }
 
         if (GameSettings.IsZenMode)
@@ -281,12 +298,14 @@ public partial class MainPage : ContentPage
 
     private void UpdateMasteryLabel()
     {
-        if (currentQuestion == null)
-        {
-            MasteryLabel.Text = string.Empty;
-            return;
-        }
-        MasteryLabel.Text = $"QUESTION MASTERY: {currentQuestion.CorrectProgress} / {GameSettings.CorrectAnswersRequired}";
+        if (currentQuestion == null) return;
+
+        // Use GameSettings.CorrectAnswersRequired to show accurate progress
+        int currentProgress = currentQuestion.CorrectProgress;
+        int totalNeeded = GameSettings.CorrectAnswersRequired;
+
+        // Example Output: Progress: 1 / 3
+        MasteryLabel.Text = $"Progress: {currentProgress} / {totalNeeded}";
     }
 
     private void UpdateTimerLabel()
@@ -445,20 +464,29 @@ public partial class MainPage : ContentPage
             ResultLabel.Text = "CORRECT!";
             ResultLabel.TextColor = Colors.Green;
 
+            // 1. ADVANCE THE TRACKERS FIRST
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
 
-            // reduce boss hp if not zen mode
             if (!GameSettings.IsZenMode && bossHP > 0)
             {
-                bossHP--;
+                bossHP -= damagePerCorrectAnswer;
             }
 
+            // 2. NOW UPDATE THE UI (So it catches the new values)
             UpdateMasteryLabel();
+            UpdateLabels(); // Updates the Boss HP and Lives displays
 
+            // 3. CHECK FOR PROGRESSION / DECK REMOVAL LAST
             if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
                 battleQuestions.Remove(currentQuestion);
+            }
+
+            if (battleQuestions.Count == 0 && !GameSettings.IsZenMode)
+            {
+                bossHP = 0;
+                UpdateLabels(); // Force display of 0 HP
             }
         }
         else
