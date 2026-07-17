@@ -10,12 +10,21 @@ public partial class MainPage : ContentPage
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
 
-    // Chnaged these to double to handle proportional damage math smoothly
     private double bossHP;
     private double damagePerCorrectAnswer;
 
     private int playerLives;
     private int startingLives;
+
+    // Trackers for the new score structure
+    private int baseQuestionsScore = 0;   // 1 point per correct answer
+    private int totalStreakBonusEarned = 0;// Accumulated extra points from streaks alone
+    private int totalPenaltiesDeducted = 0;// Total absolute points lost from mistakes
+    private int currentStreak = 0;
+
+    // Time tracking for bonus calculation
+    private System.Diagnostics.Stopwatch quizTimer = new();
+    private int totalMaxTimeAllowed = 0;
 
     private HashSet<string> selectedOptions = new HashSet<string>();
     private Button[] optionButtons = Array.Empty<Button>();
@@ -74,7 +83,6 @@ public partial class MainPage : ContentPage
         await StartBattle();
     }
 
-    // timer tick event
     private async void BattleTimerTick(object? sender, EventArgs e)
     {
         timeRemaining--;
@@ -86,10 +94,14 @@ public partial class MainPage : ContentPage
         }
 
         battleTimer?.Stop();
+        quizTimer.Stop();
+
+        // Reset metrics on defeat
+        ResetScoreMetrics();
+
         await HandleDefeat("TIME'S UP!", "YOU RAN OUT OF TIME.");
     }
 
-    // start battle session
     private async Task StartBattle()
     {
         AnswerEntry.IsEnabled = true;
@@ -106,17 +118,15 @@ public partial class MainPage : ContentPage
 
         battleQuestions = await loader.LoadQuestionsAsync(deckFile);
 
-        // reset question mastery progress
         foreach (var q in battleQuestions)
         {
             q.CorrectProgress = 0;
         }
 
-        // 1. Assign base maximum boss HP pool based on difficulty settings
         double maxBossHP;
         if (GameSettings.IsZenMode || GameSettings.CurrentDifficulty == "Zen")
         {
-            maxBossHP = -1; // represents infinite hp
+            maxBossHP = -1;
         }
         else if (GameSettings.CurrentDifficulty == "Easy")
         {
@@ -128,26 +138,29 @@ public partial class MainPage : ContentPage
         }
         else
         {
-            maxBossHP = 100.0; // standard baseline health pool
+            maxBossHP = 100.0;
         }
 
         bossHP = maxBossHP;
 
-        // 2. Calculate the exact total correct hits needed to empty the deck
-        // (Deck Count * answers required per question)
         int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
+        if (totalHitsNeeded <= 0) totalHitsNeeded = 1;
 
-        if (totalHitsNeeded <= 0)
-            totalHitsNeeded = 1; // Prevent division by zero errors
-
-        // 3. Compute dynamic damage value per successful hit
         damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
 
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
 
-        heartSizeLocked = false;
+        // Clear all tracking structures
+        ResetScoreMetrics();
 
+        int baseTimeLimit = GameSettings.TimeLimitSeconds == -1 ? 15 : GameSettings.TimeLimitSeconds;
+        totalMaxTimeAllowed = totalHitsNeeded * baseTimeLimit;
+
+        quizTimer.Reset();
+        quizTimer.Start();
+
+        heartSizeLocked = false;
         currentQuestion = null;
         AnswerEntry.Text = string.Empty;
         ResultLabel.Text = string.Empty;
@@ -181,7 +194,14 @@ public partial class MainPage : ContentPage
         NextQuestion();
     }
 
-    // handle defeat dialog
+    private void ResetScoreMetrics()
+    {
+        baseQuestionsScore = 0;
+        totalStreakBonusEarned = 0;
+        totalPenaltiesDeducted = 0;
+        currentStreak = 0;
+    }
+
     private async Task HandleDefeat(string title, string message)
     {
         AnswerEntry.IsEnabled = false;
@@ -192,8 +212,9 @@ public partial class MainPage : ContentPage
         }
 
         battleTimer?.Stop();
+        quizTimer.Stop();
 
-        bool retry = await DisplayAlert(title, message, "RETRY", "LEAVE");
+        bool retry = await DisplayAlert(title, message + "\nYour points have been cleared.", "RETRY", "LEAVE");
 
         if (retry)
         {
@@ -214,7 +235,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // handle victory dialog
     private async Task HandleVictory()
     {
         AnswerEntry.IsEnabled = false;
@@ -226,7 +246,11 @@ public partial class MainPage : ContentPage
 
         battleTimer?.Stop();
 
-        bool retry = await DisplayAlert("VICTORY!", "PLAY AGAIN?", "RETRY", "MAIN MENU");
+        // Calculate current subtotal running core points
+        int subtotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
+        if (subtotal < 0) subtotal = 0;
+
+        bool retry = await DisplayAlert("VICTORY!", $"FINAL SCORE: {subtotal}\n\nPLAY AGAIN?", "RETRY", "MAIN MENU");
 
         if (retry)
         {
@@ -240,14 +264,12 @@ public partial class MainPage : ContentPage
 
     private void UpdateLabels()
     {
-        // display infinite symbol for zen mode
         if (GameSettings.IsZenMode || bossHP < 0)
         {
             BossLabel.Text = "BOSS HP: ∞";
         }
         else
         {
-            // Math.Ceiling ensures it shows 0 only when fully dead
             BossLabel.Text = $"BOSS HP: {Math.Ceiling(bossHP)}";
         }
 
@@ -265,7 +287,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // update player lives display
     private void UpdateLivesDisplay()
     {
         LivesLayout.Children.Clear();
@@ -300,11 +321,8 @@ public partial class MainPage : ContentPage
     {
         if (currentQuestion == null) return;
 
-        // Use GameSettings.CorrectAnswersRequired to show accurate progress
         int currentProgress = currentQuestion.CorrectProgress;
         int totalNeeded = GameSettings.CorrectAnswersRequired;
-
-        // Example Output: Progress: 1 / 3
         MasteryLabel.Text = $"Progress: {currentProgress} / {totalNeeded}";
     }
 
@@ -319,7 +337,6 @@ public partial class MainPage : ContentPage
         TimeLabel.Text = $"TIME: {time:mm\\:ss}";
     }
 
-    // load next question
     private void NextQuestion()
     {
         if (battleQuestions.Count == 0 || (!GameSettings.IsZenMode && bossHP <= 0))
@@ -327,7 +344,24 @@ public partial class MainPage : ContentPage
             QuestionLabel.Text = "YOU WIN!";
             AnswerEntry.IsEnabled = false;
             battleTimer?.Stop();
-            _ = HandleVictory();
+            quizTimer.Stop();
+
+            // Calculate core performance before time bonus
+            int preBonusTotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
+            if (preBonusTotal < 0) preBonusTotal = 0;
+
+            double totalSecondsSpent = quizTimer.Elapsed.TotalSeconds;
+            if (totalSecondsSpent > totalMaxTimeAllowed) totalSecondsSpent = totalMaxTimeAllowed;
+
+            double secondsSaved = totalMaxTimeAllowed - totalSecondsSpent;
+            double timeSavedRatio = totalMaxTimeAllowed > 0 ? (secondsSaved / totalMaxTimeAllowed) : 0;
+
+            int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
+
+            // Inject final modifications to base metrics
+            baseQuestionsScore += bonusPoints;
+
+            _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
             return;
         }
 
@@ -402,6 +436,33 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async Task DisplayScoreBreakdownAsync(int performanceSubtotal, double timeSpent, double timeSaved, double ratio, int bonus)
+    {
+        int finalScore = performanceSubtotal + bonus;
+
+        string breakdownMessage =
+            $"• Base Score: {baseQuestionsScore - bonus} pts (1 pt per hit)\n" +
+            $"• Streak Bonus: +{totalStreakBonusEarned} pts (consecutive items)\n" +
+            $"• Mistakes Penalty: -{totalPenaltiesDeducted} pts (1 pt per slip)\n" +
+            $"-------------------------------\n" +
+            $"Performance Subtotal: {performanceSubtotal} pts\n\n" +
+            $"• Time Bonus:\n" +
+            $"  Saved {Math.Ceiling(timeSaved)} / {totalMaxTimeAllowed} seconds!\n" +
+            $"  Speed Bonus Percentage: +{(ratio * 100):F0}%\n" +
+            $"  Bonus Awarded: +{bonus} pts\n\n" +
+            $"===============================\n" +
+            $"GRAND TOTAL SCORE: {finalScore} pts!";
+
+        await DisplayAlert("COMBAT SCORE BREAKDOWN", breakdownMessage, "VIEW RATING");
+
+        // Commit final adjusted performance to global scope
+        baseQuestionsScore = finalScore;
+        totalStreakBonusEarned = 0;
+        totalPenaltiesDeducted = 0;
+
+        await HandleVictory();
+    }
+
     private void OptionClicked(object sender, EventArgs e)
     {
         Button clickedButton = (Button)sender;
@@ -418,7 +479,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // submit answer logic
     private async void SubmitAnswer(object sender, EventArgs e)
     {
         if (currentQuestion == null)
@@ -464,7 +524,17 @@ public partial class MainPage : ContentPage
             ResultLabel.Text = "CORRECT!";
             ResultLabel.TextColor = Colors.Green;
 
-            // 1. ADVANCE THE TRACKERS FIRST
+            // 1. Calculate Score Categorizations cleanly
+            baseQuestionsScore += 1; // Exactly 1 point per correct answer item
+
+            if (currentStreak > 0)
+            {
+                // If they have a running streak, everything above the base point is the extra streak bonus
+                totalStreakBonusEarned += currentStreak;
+            }
+            currentStreak++;
+
+            // 2. Track internal progress fields
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
 
@@ -473,11 +543,9 @@ public partial class MainPage : ContentPage
                 bossHP -= damagePerCorrectAnswer;
             }
 
-            // 2. NOW UPDATE THE UI (So it catches the new values)
             UpdateMasteryLabel();
-            UpdateLabels(); // Updates the Boss HP and Lives displays
+            UpdateLabels();
 
-            // 3. CHECK FOR PROGRESSION / DECK REMOVAL LAST
             if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
                 battleQuestions.Remove(currentQuestion);
@@ -486,13 +554,19 @@ public partial class MainPage : ContentPage
             if (battleQuestions.Count == 0 && !GameSettings.IsZenMode)
             {
                 bossHP = 0;
-                UpdateLabels(); // Force display of 0 HP
+                UpdateLabels();
             }
         }
         else
         {
             ResultLabel.Text = "INCORRECT!";
             ResultLabel.TextColor = Colors.Red;
+
+            // Break streak tracking
+            currentStreak = 0;
+
+            // Accumulate explicit mistake penalties separately
+            totalPenaltiesDeducted += 1;
 
             currentQuestion.TimesIncorrect++;
 
@@ -506,13 +580,16 @@ public partial class MainPage : ContentPage
 
         if (!GameSettings.IsZenMode && playerLives <= 0)
         {
+            quizTimer.Stop();
+            ResetScoreMetrics(); // Score wipes out instantly on death
             await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
             return;
         }
 
         if (!GameSettings.IsZenMode && bossHP <= 0)
         {
-            await HandleVictory();
+            await Task.Delay(1000);
+            NextQuestion();
             return;
         }
 
@@ -534,6 +611,7 @@ public partial class MainPage : ContentPage
             if (confirm)
             {
                 battleTimer?.Stop();
+                quizTimer.Stop();
                 await Shell.Current.GoToAsync("//MainMenu");
             }
         });
