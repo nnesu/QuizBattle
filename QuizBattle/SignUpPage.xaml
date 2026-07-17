@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8" ?>
-
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -13,10 +12,41 @@
             x:Name="EmailEntry"
             Placeholder="Email" />
 
-        <Entry
-            x:Name="PasswordEntry"
-            Placeholder="Password"
-            IsPassword="True" />
+        <!-- Password Field -->
+        <Grid ColumnDefinitions="*, Auto">
+            <Entry
+                Grid.Column="0"
+                x:Name="PasswordEntry"
+                Placeholder="Password"
+                IsPassword="True" />
+            <Button
+                Grid.Column="1"
+                x:Name="TogglePasswordBtn"
+                Text="👁️"
+                WidthRequest="45"
+                Padding="0"
+                BackgroundColor="Transparent"
+                TextColor="Gray"
+                Clicked="TogglePassword_Clicked" />
+        </Grid>
+
+        <!-- Confirm Password Field -->
+        <Grid ColumnDefinitions="*, Auto">
+            <Entry
+                Grid.Column="0"
+                x:Name="ConfirmPasswordEntry"
+                Placeholder="Confirm Password"
+                IsPassword="True" />
+            <Button
+                Grid.Column="1"
+                x:Name="ToggleConfirmPasswordBtn"
+                Text="👁️"
+                WidthRequest="45"
+                Padding="0"
+                BackgroundColor="Transparent"
+                TextColor="Gray"
+                Clicked="ToggleConfirmPassword_Clicked" />
+        </Grid>
 
         <Button
             Text="Create Account"
@@ -27,5 +57,4 @@
             Clicked="Login_Clicked" />
 
     </VerticalStackLayout>
-
 </ContentPage>

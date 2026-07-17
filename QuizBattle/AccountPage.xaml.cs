@@ -50,62 +50,56 @@ public partial class AccountPage : ContentPage
         }
     }
 
-    private async void EditPicture_Clicked(
-        object sender,
-        EventArgs e)
+    private async void EditPicture_Clicked(object sender, EventArgs e)
     {
         try
         {
-            FileResult? file =
-                await MediaPicker
-                    .PickPhotoAsync();
+            FileResult? file = await MediaPicker.PickPhotoAsync();
+            if (file == null) return;
 
-            if (file == null)
+            User user = SessionManager.GetUser();
+            CloudinaryService storage = new CloudinaryService();
+
+            // 1. Upload the image to Cloudinary
+            string photoUrl = await storage.UploadProfilePicture(user.LocalId, file);
+
+            // 2. Update database and local session memory
+            user.PhotoUrl = photoUrl;
+            FirestoreService firestore = new FirestoreService();
+            await firestore.UpdatePhotoUrl(user.LocalId, photoUrl);
+            SessionManager.Save(user);
+
+            // 3. SAFE UI UPDATE: Offload image stream generation from blocking the main thread
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                return;
-            }
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(photoUrl))
+                    {
+                        // Using a fresh Uri ImageSource safely
+                        ProfilePicture.Source = new UriImageSource
+                        {
+                            Uri = new Uri(photoUrl),
+                            CachingEnabled = false // Prevents cache-locking during a rapid update
+                        };
+                    }
+                    else
+                    {
+                        ProfilePicture.Source = "avatar1.png";
+                    }
+                }
+                catch
+                {
+                    // Soft fallback if the UI engine trips on the incoming URL string
+                    ProfilePicture.Source = "avatar1.png";
+                }
+            });
 
-            User user =
-                SessionManager.GetUser();
-
-            CloudinaryService storage =
-                new CloudinaryService();
-
-            string photoUrl =
-                await storage
-                    .UploadProfilePicture(
-                        user.LocalId,
-                        file);
-
-            user.PhotoUrl =
-                photoUrl;
-
-            FirestoreService firestore =
-                new FirestoreService();
-
-            await firestore.UpdatePhotoUrl(
-                user.LocalId,
-                photoUrl);
-
-            SessionManager.Save(
-                user);
-
-            ProfilePicture.Source =
-                ImageSource.FromUri(
-                    new Uri(
-                        photoUrl));
-
-            await DisplayAlert(
-                "Success",
-                "Profile picture updated.",
-                "OK");
+            await DisplayAlert("Success", "Profile picture updated.", "OK");
         }
         catch (Exception ex)
         {
-            await DisplayAlert(
-                "Error",
-                ex.Message,
-                "OK");
+            await DisplayAlert("Error", ex.Message, "OK");
         }
     }
 

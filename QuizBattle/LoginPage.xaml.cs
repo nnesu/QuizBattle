@@ -104,4 +104,10 @@ public partial class LoginPage : ContentPage
         await Navigation.PushAsync(
             new SignUpPage());
     }
+
+    private void TogglePassword_Clicked(object sender, EventArgs e)
+    {
+        PasswordEntry.IsPassword = !PasswordEntry.IsPassword;
+        TogglePasswordBtn.Text = PasswordEntry.IsPassword ? "👁️" : "🙈";
+    }
 }
