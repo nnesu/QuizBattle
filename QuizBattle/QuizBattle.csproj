@@ -41,13 +41,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CloudinaryDotNet" Version="1.29.2" />
+		<PackageReference Include="FirebaseAdmin" Version="3.6.0" />
+		<PackageReference Include="Google.Apis.Auth" Version="1.75.0" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.10" />
+		<PackageReference Include="System.Net.Http.Json" Version="10.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Pages\" />
 		<Folder Include="ViewModels\" />
 	</ItemGroup>
 
@@ -64,9 +69,27 @@
 		<Compile Update="DecksPage.xaml.cs">
 			<DependentUpon>DecksPage.xaml</DependentUpon>
 		</Compile>
+		<Compile Update="AccountPage.xaml.cs">
+			<DependentUpon>AccountPage.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="LoginPage.xaml.cs">
+			<DependentUpon>LoginPage.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="SignUpPage.xaml.cs">
+			<DependentUpon>SignUpPage.xaml</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
+		<MauiXaml Update="AccountPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="LoginPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="SignUpPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 		<MauiXaml Update="Source Material.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>

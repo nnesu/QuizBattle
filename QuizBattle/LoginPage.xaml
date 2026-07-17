@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="QuizBattle.LoginPage">
+
+    <VerticalStackLayout
+        Padding="30"
+        Spacing="15">
+
+        <Entry
+            x:Name="EmailEntry"
+            Placeholder="Email" />
+
+        <!-- Password entry wrapper -->
+        <Grid ColumnDefinitions="*, Auto">
+            <Entry
+                Grid.Column="0"
+                x:Name="PasswordEntry"
+                Placeholder="Password"
+                IsPassword="True" />
+            <Button
+                Grid.Column="1"
+                x:Name="TogglePasswordBtn"
+                Text="👁️"
+                WidthRequest="45"
+                Padding="0"
+                BackgroundColor="Transparent"
+                TextColor="Gray"
+                Clicked="TogglePassword_Clicked" />
+        </Grid>
+
+        <Button
+            Text="Login"
+            Clicked="Login_Clicked" />
+
+        <Button
+            Text="Don't have an account?"
+            Clicked="SignUp_Clicked" />
+
+    </VerticalStackLayout>
+</ContentPage>
