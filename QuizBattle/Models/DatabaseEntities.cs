@@ -11,6 +11,10 @@ namespace QuizBattle.Models
         [SQLite.Unique, SQLite.NotNull]
         public string Name { get; set; } = string.Empty;
 
+        // Added this field for Firestore compatibility
+        [SQLite.Ignore] // Prevents SQLite from trying to create a column for this in the DB
+        public string Description { get; set; } = string.Empty;
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 

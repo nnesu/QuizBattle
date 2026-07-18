@@ -9,60 +9,62 @@
         <Grid.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="#091121" Offset="0" />
-                <GradientStop Color="#101837" Offset="0.55" />
+                <GradientStop Color="#101837" Offset="0.58" />
                 <GradientStop Color="#0A2133" Offset="1" />
             </LinearGradientBrush>
         </Grid.Background>
 
-        <VerticalStackLayout Padding="22,22,22,26" Spacing="0">
-            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
-                <Button Text=" " Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44"
-                        Padding="0" FontSize="30" BackgroundColor="#17223E"
-                        TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
-                <VerticalStackLayout Grid.Column="1" Margin="12,0,12,0" Spacing="1">
-                    <Label Text="MY DECKS" TextColor="#F8FAFC" FontSize="16" FontAttributes="Bold" />
-                    <Label Text="LOCAL ARSENAL" TextColor="#8EA0C0" FontSize="10" FontAttributes="Bold" />
+        <ScrollView x:Name="DecksView">
+            <VerticalStackLayout Padding="22,22,22,28" Spacing="0" MaximumWidthRequest="700">
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                    <Button Text="‹" Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="30" BackgroundColor="#17223E" TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+                    <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" Spacing="1">
+                        <Label Text="MY DECKS" TextColor="#F8FAFC" FontSize="20" FontAttributes="Bold" />
+                        <Label Text="BUILD YOUR KNOWLEDGE ARSENAL" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Grid>
+                <Grid Margin="0,26,0,12" ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button Grid.Column="0" Text="CREATE DECK" Clicked="OnAddNewDeckClicked" HeightRequest="50" BackgroundColor="#8B5CF6" TextColor="White" FontAttributes="Bold" CornerRadius="14" />
+                    <Button Grid.Column="1" Text="SEARCH GLOBAL" Clicked="OnSearchGlobalClicked" HeightRequest="50" BackgroundColor="#18213C" TextColor="#5EEAD4" BorderColor="#31405F" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
+                </Grid>
+                <Grid x:Name="DecksGrid" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="12" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid x:Name="CardsView" IsVisible="False" RowDefinitions="Auto,Auto,*,Auto" Padding="22,22,22,26">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Button Text="‹" Clicked="CloseCardsView" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="30" BackgroundColor="#17223E" TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label Text="DECK WORKSPACE" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
+                    <Label x:Name="DeckTitleLabel" Text="DECK" TextColor="#F8FAFC" FontSize="22" FontAttributes="Bold" LineBreakMode="TailTruncation" />
                 </VerticalStackLayout>
             </Grid>
-
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,24,0,20">
-                <Button Grid.Column="0" Text="+ CREATE DECK" Clicked="OnCreateDeckClicked" HeightRequest="52"
-                        BackgroundColor="#8B5CF6" TextColor="White" FontSize="12" FontAttributes="Bold"
-                        CornerRadius="14" />
-
-                <Button Grid.Column="1" Text="SEARCH GLOBAL" Clicked="OnSearchGlobalClicked" HeightRequest="52"
-                        BackgroundColor="#18213C" TextColor="#5EEAD4" FontSize="12" FontAttributes="Bold"
-                        BorderColor="#31405F" BorderWidth="1" CornerRadius="14" />
+            <Grid Grid.Row="1" Margin="0,22,0,18" ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Button Grid.Column="0" Text="RENAME" Clicked="OnRenameDeckClicked" HeightRequest="48" BackgroundColor="#1A2644" TextColor="#DCE7FA" BorderColor="#344867" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
+                <Button Grid.Column="1" Text="DELETE DECK" Clicked="OnDeleteDeckClicked" HeightRequest="48" BackgroundColor="#301D31" TextColor="#FDA4AF" BorderColor="#67374B" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
             </Grid>
+            <ScrollView Grid.Row="2">
+                <VerticalStackLayout Spacing="12">
+                    <Grid x:Name="CardsGrid" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="12" />
+                </VerticalStackLayout>
+            </ScrollView>
+            <!-- 3-Row Action Grid -->
+            <Grid Grid.Row="3" Margin="0,18,0,0" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="10" ColumnSpacing="10">
+                <Button Grid.Row="0" Grid.Column="0" Text="GENERATE" Clicked="OpenGenerateCardsPopup" HeightRequest="46" BackgroundColor="#14B8A6" TextColor="#052D2A" FontAttributes="Bold" CornerRadius="14" />
+                <Button Grid.Row="0" Grid.Column="1" Text="CREATE" Clicked="OpenCreateCardPopup" HeightRequest="46" BackgroundColor="#8B5CF6" TextColor="White" FontAttributes="Bold" CornerRadius="14" />
+                <Button Grid.Row="1" Grid.Column="0" Text="IMPORT" Clicked="OpenImportPopup" HeightRequest="46" BackgroundColor="#1A2644" TextColor="#DCE7FA" BorderColor="#344867" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
+                <Button Grid.Row="1" Grid.Column="1" Text="EXPORT" Clicked="OpenExportPopup" HeightRequest="46" BackgroundColor="#1A2644" TextColor="#DCE7FA" BorderColor="#344867" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
+                <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="PUBLISH GLOBAL" Clicked="OnUploadDeckClicked" HeightRequest="46" BackgroundColor="#3B82F6" TextColor="White" FontAttributes="Bold" CornerRadius="14" />
+            </Grid>
+        </Grid>
 
-            <BoxView HeightRequest="1" Color="#293C5D" Margin="0,0,0,20"/>
-
-            <CollectionView x:Name="DecksCollectionView" SelectionMode="None">
-                <CollectionView.EmptyView>
-                    <Label Text="No decks found. Create one or search globally!" 
-                           TextColor="#8291AF" HorizontalOptions="Center" Margin="0,40,0,0" />
-                </CollectionView.EmptyView>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Margin="0,0,0,12" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
-                                    <Label Text="{Binding Name}" TextColor="#F8FAFC" FontSize="16" FontAttributes="Bold" />
-                                </VerticalStackLayout>
-
-                                <HorizontalStackLayout Grid.Column="1" Spacing="8">
-                                    <Button Text="EDIT" Clicked="OnEditDeckClicked" CommandParameter="{Binding .}" 
-                                            BackgroundColor="#1E2A4F" TextColor="#A9B6CF" FontSize="10" FontAttributes="Bold" 
-                                            HeightRequest="36" CornerRadius="8" Padding="12,0"/>
-                                    <Button Text="DEL" Clicked="OnDeleteDeckClicked" CommandParameter="{Binding .}" 
-                                            BackgroundColor="#3A1C28" TextColor="#FDA4AF" FontSize="10" FontAttributes="Bold" 
-                                            HeightRequest="36" CornerRadius="8" Padding="12,0"/>
-                                </HorizontalStackLayout>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </VerticalStackLayout>
+        <Grid x:Name="PopupBackground" BackgroundColor="#C9000718" IsVisible="False">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Tapped="DismissActivePopup" />
+            </Grid.GestureRecognizers>
+            <Border x:Name="PopupContainer" BackgroundColor="#121D37" Stroke="#344867" StrokeThickness="1" VerticalOptions="Center" HorizontalOptions="Center" WidthRequest="340" Padding="20" StrokeShape="RoundRectangle 20">
+                <VerticalStackLayout x:Name="PopupContentStack" Spacing="12" />
+            </Border>
+        </Grid>
     </Grid>
 </ContentPage>

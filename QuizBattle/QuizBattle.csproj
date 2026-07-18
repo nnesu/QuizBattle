@@ -93,6 +93,9 @@
 		<MauiXaml Update="LeaderboardPage.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
+		<MauiXaml Update="SearchDecksPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 		<MauiXaml Update="SignUpPage.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
