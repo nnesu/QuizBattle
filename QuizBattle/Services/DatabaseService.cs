@@ -99,11 +99,31 @@ namespace QuizBattle.Services
         public async Task ImportDeckFromTextAsync(string deckName, string rawText, bool clearExisting = false, bool isReadOnly = false, string? customUid = null)
         {
             await InitAsync();
-            var deck = await CreateDeckAsync(deckName, isReadOnly, customUid);
+
+            // FIX: Safely evaluate if the target Uid has already been instantiated locally
+            DeckEntity? deck = null;
+            if (!string.IsNullOrWhiteSpace(customUid))
+            {
+                deck = await GetDeckByUidAsync(customUid);
+            }
+
+            // If it doesn't exist, we can safely create a new row entry now
+            if (deck == null)
+            {
+                deck = await CreateDeckAsync(deckName, isReadOnly, customUid);
+            }
+            else
+            {
+                // If it already exists, update its basic schema details instead of crashing
+                deck.IsReadOnly = isReadOnly;
+                await _db!.UpdateAsync(deck);
+            }
+
             if (clearExisting)
             {
                 await _db!.ExecuteAsync("DELETE FROM Questions WHERE DeckId = ?", deck.Id);
             }
+
             string[] lines = rawText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
             {

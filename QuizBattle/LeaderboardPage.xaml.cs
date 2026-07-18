@@ -23,7 +23,7 @@ public partial class LeaderboardPage : ContentPage
     private async Task LoadDecks()
     {
         _availableDecks = await _dbService.GetDecksAsync();
-        DeckPicker.ItemsSource = _availableDecks.Select(d => d.Name).ToList();
+        DeckPicker.ItemsSource = _availableDecks.Select(d => $"{d.Name.ToUpper()} [{(d.Uid.Length > 5 ? d.Uid.Substring(0, 5) : d.Uid)}]").ToList();
     }
 
     private async void OnDeckSelected(object sender, EventArgs e)
@@ -39,7 +39,7 @@ public partial class LeaderboardPage : ContentPage
 
         try
         {
-            var topScores = await _firestoreService.GetLeaderboardAsync(selectedDeck.Name);
+            var topScores = await _firestoreService.GetLeaderboardAsync(selectedDeck.Uid);
             LeaderboardStack.Children.Clear();
 
             if (topScores.Count == 0)

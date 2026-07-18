@@ -437,7 +437,7 @@ public partial class MainPage : ContentPage
                 {
                     var user = QuizBattle.Helpers.SessionManager.GetUser();
                     FirestoreService firestore = new FirestoreService();
-                    await firestore.SubmitLeaderboardScore(user.LocalId, user.DisplayName, currentDeck.Name, finalScore, user.IdToken);
+                    await firestore.SubmitLeaderboardScore(user.LocalId, user.DisplayName, currentDeck.Uid, finalScore, user.IdToken);
                 }
             }
         }

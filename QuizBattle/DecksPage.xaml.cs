@@ -76,7 +76,17 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "GENERATE", BackgroundColor = Color.FromArgb("#14B8A6") };
-        btn.Clicked += async (s, ev) => { await _dbService.ImportDeckFromTextAsync(_currentDeck!.Name, await _aiService.GenerateQuestionsAsync(editor.Text, 10)); DismissActivePopup(null, null!); LoadCards(); };
+
+        btn.Clicked += async (s, ev) => {
+            string generatedText = await _aiService.GenerateQuestionsAsync(editor.Text, 10);
+            string[] lines = generatedText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string line in lines)
+            {
+                await SaveRawLineToCurrentDeckAsync(line);
+            }
+            DismissActivePopup(null, null!);
+            LoadCards();
+        };
         ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Paste Material:" }, editor, btn } });
     }
 
@@ -85,7 +95,13 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 80, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "CREATE", BackgroundColor = Color.FromArgb("#8B5CF6") };
-        btn.Clicked += async (s, ev) => { await _dbService.ImportDeckFromTextAsync(_currentDeck!.Name, editor.Text); DismissActivePopup(null, null!); LoadCards(); };
+
+        btn.Clicked += async (s, ev) => {
+            if (string.IsNullOrWhiteSpace(editor.Text)) return;
+            await SaveRawLineToCurrentDeckAsync(editor.Text);
+            DismissActivePopup(null, null!);
+            LoadCards();
+        };
         ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Format: Type|Q|A" }, editor, btn } });
     }
 
@@ -94,8 +110,50 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "IMPORT", BackgroundColor = Color.FromArgb("#A8DADC") };
-        btn.Clicked += async (s, ev) => { await _dbService.ImportDeckFromTextAsync(_currentDeck!.Name, editor.Text); DismissActivePopup(null, null!); LoadCards(); };
+
+        btn.Clicked += async (s, ev) => {
+            if (string.IsNullOrWhiteSpace(editor.Text)) return;
+            string[] lines = editor.Text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string line in lines)
+            {
+                await SaveRawLineToCurrentDeckAsync(line);
+            }
+            DismissActivePopup(null, null!);
+            LoadCards();
+        };
         ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Paste Data:" }, editor, btn } });
+    }
+
+    private async Task SaveRawLineToCurrentDeckAsync(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line) || _currentDeck == null) return;
+        string[] parts = line.Split('|');
+        if (parts.Length < 3) return;
+
+        string type = parts[0].Trim();
+        if (type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
+        {
+            var q = new QuestionEntity
+            {
+                DeckId = _currentDeck.Id,
+                Type = "Identification",
+                Text = parts[1].Trim(),
+                AnswersRaw = parts[2].Trim()
+            };
+            await _dbService.SaveQuestionAsync(q);
+        }
+        else if (type.Equals("MultipleChoice", StringComparison.OrdinalIgnoreCase) && parts.Length >= 8)
+        {
+            var q = new QuestionEntity
+            {
+                DeckId = _currentDeck.Id,
+                Type = "MultipleChoice",
+                Text = parts[1].Trim(),
+                OptionsRaw = $"{parts[2].Trim()}|{parts[3].Trim()}|{parts[4].Trim()}|{parts[5].Trim()}",
+                AnswersRaw = parts[7].Trim()
+            };
+            await _dbService.SaveQuestionAsync(q);
+        }
     }
 
     public void OpenExportPopup(object? sender, EventArgs e)
@@ -111,14 +169,12 @@ public partial class DecksPage : ContentPage
         bool isReadOnly = _currentDeck?.IsReadOnly ?? false;
         var editor = new Editor { Text = question.Text, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White, IsReadOnly = isReadOnly };
         var saveBtn = new Button { Text = "SAVE", BackgroundColor = Color.FromArgb("#2A9D8F"), IsVisible = !isReadOnly };
-
         saveBtn.Clicked += async (s, ev) => {
             question.Text = editor.Text;
             await _dbService.SaveQuestionAsync(question);
             DismissActivePopup(null, null!);
             LoadCards();
         };
-
         var layout = new VerticalStackLayout { Children = { new Label { Text = isReadOnly ? "View Card" : "Edit Card" }, editor } };
         if (!isReadOnly) layout.Children.Add(saveBtn);
         ShowPopup(layout);
