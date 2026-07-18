@@ -57,6 +57,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Update="LeaderboardPage.xaml.cs">
+		  <DependentUpon>LeaderboardPage.xaml</DependentUpon>
+		</Compile>
 		<Compile Update="Source Material.xaml.cs">
 			<DependentUpon>Source Material.xaml</DependentUpon>
 		</Compile>
@@ -85,6 +88,9 @@
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 		<MauiXaml Update="LoginPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="LeaderboardPage.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 		<MauiXaml Update="SignUpPage.xaml">

@@ -13,12 +13,12 @@ namespace QuizBattle.Services
 
             // initialize sqlite
             SQLitePCL.Batteries_V2.Init();
-
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuizBattle.db3");
             _db = new SQLiteAsyncConnection(dbPath);
 
             await _db.CreateTableAsync<DeckEntity>();
             await _db.CreateTableAsync<QuestionEntity>();
+            await _db.CreateTableAsync<DeckMasteryEntity>();
 
             await MigrateLegacyTextFilesAsync();
         }
@@ -35,7 +35,6 @@ namespace QuizBattle.Services
         {
             await InitAsync();
             if (string.IsNullOrWhiteSpace(name)) return null;
-
             string cleanName = name.Trim();
             var allDecks = await _db!.Table<DeckEntity>().ToListAsync();
             return allDecks.FirstOrDefault(d => d.Name.Equals(cleanName, StringComparison.OrdinalIgnoreCase));
@@ -105,13 +104,16 @@ namespace QuizBattle.Services
             }
 
             string[] lines = rawText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
             foreach (string line in lines)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
+
                 string[] parts = line.Split('|');
                 if (parts.Length < 3) continue;
 
                 string type = parts[0].Trim();
+
                 if (type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
                 {
                     var q = new QuestionEntity
@@ -142,6 +144,7 @@ namespace QuizBattle.Services
         {
             await InitAsync();
             var questions = await GetQuestionsForDeckAsync(deckId);
+
             List<string> lines = new List<string>();
 
             foreach (var q in questions)
@@ -178,6 +181,7 @@ namespace QuizBattle.Services
                 {
                     string name = Path.GetFileNameWithoutExtension(file);
                     var existingDeck = await GetDeckByNameAsync(name);
+
                     if (existingDeck == null)
                     {
                         string text = await File.ReadAllTextAsync(file);
@@ -191,6 +195,36 @@ namespace QuizBattle.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Migration error: {ex.Message}");
+            }
+        }
+
+        // Deck Mastery Operations
+        public async Task<DeckMasteryEntity> GetDeckMasteryAsync(int deckId)
+        {
+            await InitAsync();
+            return await _db!.Table<DeckMasteryEntity>().FirstOrDefaultAsync(m => m.DeckId == deckId);
+        }
+
+        public async Task SaveDeckMasteryAsync(int deckId, int newScore)
+        {
+            await InitAsync();
+            var mastery = await GetDeckMasteryAsync(deckId);
+
+            if (mastery == null)
+            {
+                mastery = new DeckMasteryEntity
+                {
+                    DeckId = deckId,
+                    HighScore = newScore,
+                    LastPlayed = DateTime.Now
+                };
+                await _db!.InsertAsync(mastery);
+            }
+            else if (newScore > mastery.HighScore)
+            {
+                mastery.HighScore = newScore;
+                mastery.LastPlayed = DateTime.Now;
+                await _db!.UpdateAsync(mastery);
             }
         }
     }

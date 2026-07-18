@@ -9,10 +9,8 @@ public partial class MainPage : ContentPage
     private readonly Random random = new();
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
-
     private double bossHP;
     private double damagePerCorrectAnswer;
-
     private int playerLives;
     private int startingLives;
 
@@ -38,7 +36,6 @@ public partial class MainPage : ContentPage
     private readonly double heartMinSize = 18;
     private readonly double heartMaxSize = 48;
     private readonly double heartSpacing = 4;
-
     private bool heartSizeLocked = false;
 
     public MainPage()
@@ -105,13 +102,13 @@ public partial class MainPage : ContentPage
     private async Task StartBattle()
     {
         AnswerEntry.IsEnabled = true;
-
         foreach (Button button in optionButtons)
         {
             button.IsEnabled = true;
         }
 
         QuestionLoader loader = new QuestionLoader();
+
         string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
             ? "QuestionList.txt"
             : GameSettings.SelectedDeckName;
@@ -145,7 +142,6 @@ public partial class MainPage : ContentPage
 
         int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
         if (totalHitsNeeded <= 0) totalHitsNeeded = 1;
-
         damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
 
         playerLives = GameSettings.PlayerLives;
@@ -153,7 +149,6 @@ public partial class MainPage : ContentPage
 
         // Clear all tracking structures
         ResetScoreMetrics();
-
         int baseTimeLimit = GameSettings.TimeLimitSeconds == -1 ? 15 : GameSettings.TimeLimitSeconds;
         totalMaxTimeAllowed = totalHitsNeeded * baseTimeLimit;
 
@@ -205,7 +200,6 @@ public partial class MainPage : ContentPage
     private async Task HandleDefeat(string title, string message)
     {
         AnswerEntry.IsEnabled = false;
-
         foreach (Button button in optionButtons)
         {
             button.IsEnabled = false;
@@ -215,7 +209,6 @@ public partial class MainPage : ContentPage
         quizTimer.Stop();
 
         bool retry = await DisplayAlert(title, message + "\nYour points have been cleared.", "RETRY", "LEAVE");
-
         if (retry)
         {
             await StartBattle();
@@ -223,7 +216,6 @@ public partial class MainPage : ContentPage
         else
         {
             bool confirm = await DisplayAlert("ADMIT DEFEAT FOR NOW?", "", "YES", "NO");
-
             if (confirm)
             {
                 await Shell.Current.GoToAsync("//MainMenu");
@@ -238,7 +230,6 @@ public partial class MainPage : ContentPage
     private async Task HandleVictory()
     {
         AnswerEntry.IsEnabled = false;
-
         foreach (Button button in optionButtons)
         {
             button.IsEnabled = false;
@@ -251,7 +242,6 @@ public partial class MainPage : ContentPage
         if (subtotal < 0) subtotal = 0;
 
         bool retry = await DisplayAlert("VICTORY!", $"FINAL SCORE: {subtotal}\n\nPLAY AGAIN?", "RETRY", "MAIN MENU");
-
         if (retry)
         {
             await StartBattle();
@@ -266,7 +256,7 @@ public partial class MainPage : ContentPage
     {
         if (GameSettings.IsZenMode || bossHP < 0)
         {
-            BossLabel.Text = "BOSS HP: ∞";
+            BossLabel.Text = "BOSS HP:          ";
         }
         else
         {
@@ -275,7 +265,7 @@ public partial class MainPage : ContentPage
 
         if (GameSettings.IsZenMode)
         {
-            LivesLabel.Text = "LIVES: ∞";
+            LivesLabel.Text = "LIVES:              ";
             LivesLabel.IsVisible = true;
             LivesLayout.IsVisible = false;
         }
@@ -309,7 +299,7 @@ public partial class MainPage : ContentPage
         {
             LivesLayout.Children.Add(new Label
             {
-                Text = new string('♥', Math.Max(0, playerLives)),
+                Text = new string(' ', Math.Max(0, playerLives)),
                 FontSize = Math.Min(24, size),
                 TextColor = Colors.Red,
                 VerticalOptions = LayoutOptions.Center
@@ -320,7 +310,6 @@ public partial class MainPage : ContentPage
     private void UpdateMasteryLabel()
     {
         if (currentQuestion == null) return;
-
         int currentProgress = currentQuestion.CorrectProgress;
         int totalNeeded = GameSettings.CorrectAnswersRequired;
         MasteryLabel.Text = $"Progress: {currentProgress} / {totalNeeded}";
@@ -330,9 +319,10 @@ public partial class MainPage : ContentPage
     {
         if (GameSettings.TimeLimitSeconds == -1 || GameSettings.IsZenMode)
         {
-            TimeLabel.Text = "TIME: ∞";
+            TimeLabel.Text = "TIME:              ";
             return;
         }
+
         TimeSpan time = TimeSpan.FromSeconds(timeRemaining);
         TimeLabel.Text = $"TIME: {time:mm\\:ss}";
     }
@@ -343,6 +333,7 @@ public partial class MainPage : ContentPage
         {
             QuestionLabel.Text = "YOU WIN!";
             AnswerEntry.IsEnabled = false;
+
             battleTimer?.Stop();
             quizTimer.Stop();
 
@@ -355,18 +346,15 @@ public partial class MainPage : ContentPage
 
             double secondsSaved = totalMaxTimeAllowed - totalSecondsSpent;
             double timeSavedRatio = totalMaxTimeAllowed > 0 ? (secondsSaved / totalMaxTimeAllowed) : 0;
-
             int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
 
             // Inject final modifications to base metrics
             baseQuestionsScore += bonusPoints;
-
             _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
             return;
         }
 
         Question? nextQuestion;
-
         if (battleQuestions.Count == 1)
         {
             nextQuestion = battleQuestions[0];
@@ -406,7 +394,6 @@ public partial class MainPage : ContentPage
         else if (currentQuestion.Type == QuestionType.MultipleChoice)
         {
             MultipleChoiceLayout.IsVisible = true;
-
             Button[] buttons = { OptionButton1, OptionButton2, OptionButton3, OptionButton4 };
 
             for (int index = 0; index < buttons.Length; index++)
@@ -439,14 +426,13 @@ public partial class MainPage : ContentPage
     private async Task DisplayScoreBreakdownAsync(int performanceSubtotal, double timeSpent, double timeSaved, double ratio, int bonus)
     {
         int finalScore = performanceSubtotal + bonus;
-
         string breakdownMessage =
-            $"• Base Score: {baseQuestionsScore - bonus} pts (1 pt per hit)\n" +
-            $"• Streak Bonus: +{totalStreakBonusEarned} pts (consecutive items)\n" +
-            $"• Mistakes Penalty: -{totalPenaltiesDeducted} pts (1 pt per slip)\n" +
+            $"  Base Score: {baseQuestionsScore - bonus} pts (1 pt per hit)\n" +
+            $"  Streak Bonus: +{totalStreakBonusEarned} pts (consecutive items)\n" +
+            $"  Mistakes Penalty: -{totalPenaltiesDeducted} pts (1 pt per slip)\n" +
             $"-------------------------------\n" +
             $"Performance Subtotal: {performanceSubtotal} pts\n\n" +
-            $"• Time Bonus:\n" +
+            $"  Time Bonus:\n" +
             $"  Saved {Math.Ceiling(timeSaved)} / {totalMaxTimeAllowed} seconds!\n" +
             $"  Speed Bonus Percentage: +{(ratio * 100):F0}%\n" +
             $"  Bonus Awarded: +{bonus} pts\n\n" +
@@ -454,6 +440,30 @@ public partial class MainPage : ContentPage
             $"GRAND TOTAL SCORE: {finalScore} pts!";
 
         await DisplayAlert("COMBAT SCORE BREAKDOWN", breakdownMessage, "VIEW RATING");
+
+        try
+        {
+            DatabaseService db = new DatabaseService();
+            var currentDeck = await db.GetDeckByNameAsync(GameSettings.SelectedDeckName);
+
+            if (currentDeck != null)
+            {
+                // 1. Save Local Mastery
+                await db.SaveDeckMasteryAsync(currentDeck.Id, finalScore);
+
+                // 2. Push to Global Leaderboard if logged in
+                if (QuizBattle.Helpers.SessionManager.IsLoggedIn())
+                {
+                    var user = QuizBattle.Helpers.SessionManager.GetUser();
+                    FirestoreService firestore = new FirestoreService();
+                    await firestore.SubmitLeaderboardScore(user.LocalId, user.DisplayName, currentDeck.Name, finalScore);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to save score: {ex.Message}");
+        }
 
         // Commit final adjusted performance to global scope
         baseQuestionsScore = finalScore;
@@ -607,7 +617,6 @@ public partial class MainPage : ContentPage
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             bool confirm = await DisplayAlert("BATTLE IN PROGRESS!", "CONFIRM RETURN TO MENU?", "YES", "NO");
-
             if (confirm)
             {
                 battleTimer?.Stop();
@@ -615,7 +624,6 @@ public partial class MainPage : ContentPage
                 await Shell.Current.GoToAsync("//MainMenu");
             }
         });
-
         return true;
     }
 }

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizBattle.LeaderboardPage"
+             Title="Leaderboard"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#091121">
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#091121" Offset="0" />
+                <GradientStop Color="#101837" Offset="0.55" />
+                <GradientStop Color="#0A2133" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <VerticalStackLayout Padding="22,22,22,26" Spacing="0" MaximumWidthRequest="650">
+            <!-- Header -->
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                <Button Text=" " Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44"
+                        Padding="0" FontSize="30" BackgroundColor="#17223E"
+                        TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+                <VerticalStackLayout Grid.Column="1" Margin="12,0,12,0" Spacing="1">
+                    <Label Text="HALL OF FAME" TextColor="#F8FAFC" FontSize="16" FontAttributes="Bold" />
+                    <Label Text="GLOBAL RANKINGS" TextColor="#8EA0C0" FontSize="10" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Deck Selector -->
+            <Border Margin="0,24,0,0" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="SELECT DECK" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
+                    <Picker x:Name="DeckPicker" Title="Choose a Deck" TextColor="#F8FAFC" TitleColor="#8EA0C0" BackgroundColor="#15213C" SelectedIndexChanged="OnDeckSelected"/>
+
+                    <BoxView HeightRequest="1" Color="#293C5D" Margin="0,10,0,10"/>
+
+                    <Label Text="YOUR LOCAL MASTERY" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
+                    <Label x:Name="LocalHighScoreLabel" Text="High Score: --" TextColor="#5EEAD4" FontSize="18" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Global Leaderboard -->
+            <Label Margin="0,28,0,10" Text="TOP 10 GLOBAL PLAYERS" TextColor="#A9B6CF" FontSize="11" FontAttributes="Bold" />
+
+            <ScrollView HeightRequest="400">
+                <VerticalStackLayout x:Name="LeaderboardStack" Spacing="10">
+                    <!-- Leaderboard rows will be injected here dynamically -->
+                </VerticalStackLayout>
+            </ScrollView>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -1,4 +1,3 @@
-// MainMenu.xaml.cs
 namespace QuizBattle;
 
 public partial class MainMenu : ContentPage
@@ -26,5 +25,11 @@ public partial class MainMenu : ContentPage
     private void OnExitClicked(object sender, EventArgs e)
     {
         Application.Current?.Quit();
+    }
+
+    // New navigation logic for the Leaderboard
+    private async void OnLeaderboardClicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new LeaderboardPage());
     }
 }
