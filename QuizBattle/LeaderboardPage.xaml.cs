@@ -29,14 +29,11 @@ public partial class LeaderboardPage : ContentPage
     private async void OnDeckSelected(object sender, EventArgs e)
     {
         if (DeckPicker.SelectedIndex == -1) return;
-
         var selectedDeck = _availableDecks[DeckPicker.SelectedIndex];
 
-        // 1. Fetch Local Mastery Score
         var localMastery = await _dbService.GetDeckMasteryAsync(selectedDeck.Id);
         LocalHighScoreLabel.Text = localMastery != null ? $"High Score: {localMastery.HighScore} pts" : "High Score: 0 pts";
 
-        // 2. Fetch Global Leaderboard
         LeaderboardStack.Children.Clear();
         LeaderboardStack.Children.Add(new Label { Text = "Loading global scores...", TextColor = Colors.White, HorizontalOptions = LayoutOptions.Center });
 

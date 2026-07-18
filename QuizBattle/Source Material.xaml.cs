@@ -14,39 +14,24 @@ public partial class SourceMaterial : ContentPage
     {
         InitializeComponent();
         GameSettings.SelectedDeckName = "";
+        GameSettings.SelectedDeckUid = "";
         RefreshDropdownItems();
         ApplyDifficultyPreset("Medium");
     }
 
-    // handle difficulty checkbox selection
     private void OnDifficultyChanged(object? sender, CheckedChangedEventArgs e)
     {
         if (_isChangingDifficulty || !e.Value) return;
-
         var cb = sender as CheckBox;
-        if (cb == EasyCheck)
-        {
-            ApplyDifficultyPreset("Easy");
-        }
-        else if (cb == MediumCheck)
-        {
-            ApplyDifficultyPreset("Medium");
-        }
-        else if (cb == HardCheck)
-        {
-            ApplyDifficultyPreset("Hard");
-        }
-        else if (cb == ZenCheck)
-        {
-            ApplyDifficultyPreset("Zen");
-        }
+        if (cb == EasyCheck) ApplyDifficultyPreset("Easy");
+        else if (cb == MediumCheck) ApplyDifficultyPreset("Medium");
+        else if (cb == HardCheck) ApplyDifficultyPreset("Hard");
+        else if (cb == ZenCheck) ApplyDifficultyPreset("Zen");
     }
 
-    // apply strict values from matrix
     private void ApplyDifficultyPreset(string level)
     {
         _isChangingDifficulty = true;
-
         EasyCheck.IsChecked = (level == "Easy");
         MediumCheck.IsChecked = (level == "Medium");
         HardCheck.IsChecked = (level == "Hard");
@@ -60,7 +45,6 @@ public partial class SourceMaterial : ContentPage
             GameSettings.CorrectAnswersRequired = 1;
             GameSettings.TimeLimitSeconds = 30;
             GameSettings.MaxQuestions = 20;
-
             TimerTitleLabel.Text = "Timer (Default: 30s):";
             TimerEntry.Text = "30";
             TimerEntry.IsEnabled = true;
@@ -73,7 +57,6 @@ public partial class SourceMaterial : ContentPage
             GameSettings.CorrectAnswersRequired = 2;
             GameSettings.TimeLimitSeconds = 15;
             GameSettings.MaxQuestions = 20;
-
             TimerTitleLabel.Text = "Timer (Default: 15s):";
             TimerEntry.Text = "15";
             TimerEntry.IsEnabled = true;
@@ -86,7 +69,6 @@ public partial class SourceMaterial : ContentPage
             GameSettings.CorrectAnswersRequired = 3;
             GameSettings.TimeLimitSeconds = 7;
             GameSettings.MaxQuestions = 20;
-
             TimerTitleLabel.Text = "Timer (Default: 7s):";
             TimerEntry.Text = "7";
             TimerEntry.IsEnabled = true;
@@ -99,34 +81,25 @@ public partial class SourceMaterial : ContentPage
             GameSettings.CorrectAnswersRequired = 3;
             GameSettings.TimeLimitSeconds = -1;
             GameSettings.MaxQuestions = 20;
-
             TimerTitleLabel.Text = "Timer: NO TIMER (ZEN MODE)";
             TimerEntry.Text = "0";
             TimerEntry.IsEnabled = false;
         }
-
         _isChangingDifficulty = false;
     }
 
-    // timer input validation
     private void OnTimerTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (string.IsNullOrEmpty(e.NewTextValue) || !TimerEntry.IsEnabled) return;
-
         string digitsOnly = new string(e.NewTextValue.Where(char.IsDigit).ToArray());
-
         if (digitsOnly != e.NewTextValue)
         {
             TimerEntry.Text = digitsOnly;
             return;
         }
-
-        if (int.TryParse(digitsOnly, out int val))
+        if (int.TryParse(digitsOnly, out int val) && val > 100)
         {
-            if (val > 100)
-            {
-                TimerEntry.Text = "100";
-            }
+            TimerEntry.Text = "100";
         }
     }
 
@@ -136,17 +109,18 @@ public partial class SourceMaterial : ContentPage
         if (DropdownScrollContainer.IsVisible) RefreshDropdownItems();
     }
 
-    // refresh dropdown list
     private async void RefreshDropdownItems()
     {
         DropdownStackList.Children.Clear();
         var decks = await _dbService.GetDecksAsync();
-
         foreach (var deck in decks)
         {
+            string shortenedUid = deck.Uid.Length > 5 ? deck.Uid.Substring(0, 5) : deck.Uid;
+            string displayLabel = $"{deck.Name.ToUpper()} [{shortenedUid}]";
+
             var rowBtn = new Button
             {
-                Text = deck.Name.ToUpper(),
+                Text = displayLabel,
                 TextColor = Colors.White,
                 BackgroundColor = Colors.Transparent,
                 HorizontalOptions = LayoutOptions.Fill,
@@ -157,22 +131,17 @@ public partial class SourceMaterial : ContentPage
 
             rowBtn.Clicked += (s, e) => {
                 GameSettings.SelectedDeckName = deck.Name;
-                DeckDropdownButton.Text = $"ACTIVE DECK: {deck.Name.ToUpper()} ▾";
+                GameSettings.SelectedDeckUid = deck.Uid;
+                DeckDropdownButton.Text = $"ACTIVE DECK: {deck.Name.ToUpper()} ({shortenedUid})";
                 DropdownScrollContainer.IsVisible = false;
             };
-
             DropdownStackList.Children.Add(rowBtn);
         }
     }
 
     private void CloseSetupPopup(object? sender, EventArgs e) => SetupPopupOverlay.IsVisible = false;
+    private async void OnBackClicked(object? sender, EventArgs e) => await Navigation.PopAsync();
 
-    private async void OnBackClicked(object? sender, EventArgs e)
-    {
-        await Navigation.PopAsync();
-    }
-
-    // generate deck modal
     private void OpenGenerateDeckModal(object? sender, EventArgs e)
     {
         var title = new Entry { Placeholder = "New Deck Name...", TextColor = Colors.White, BackgroundColor = Colors.Black };
@@ -185,10 +154,15 @@ public partial class SourceMaterial : ContentPage
             try
             {
                 string results = await _aiService.GenerateQuestionsAsync(inputNotes.Text, GameSettings.MaxQuestions);
-                await _dbService.ImportDeckFromTextAsync(title.Text.Trim(), results);
 
-                GameSettings.SelectedDeckName = title.Text.Trim();
-                DeckDropdownButton.Text = $"ACTIVE DECK: {GameSettings.SelectedDeckName.ToUpper()} ▾";
+                var newDeck = await _dbService.CreateDeckAsync(title.Text.Trim());
+                await _dbService.ImportDeckFromTextAsync(newDeck.Name, results, clearExisting: true, false, newDeck.Uid);
+
+                GameSettings.SelectedDeckName = newDeck.Name;
+                GameSettings.SelectedDeckUid = newDeck.Uid;
+
+                string shortenedUid = newDeck.Uid.Length > 5 ? newDeck.Uid.Substring(0, 5) : newDeck.Uid;
+                DeckDropdownButton.Text = $"ACTIVE DECK: {GameSettings.SelectedDeckName.ToUpper()} ({shortenedUid})";
                 SetupPopupOverlay.IsVisible = false;
             }
             catch (Exception ex) { await DisplayAlert("ERROR", ex.Message, "OK"); }
@@ -200,7 +174,6 @@ public partial class SourceMaterial : ContentPage
         SetupPopupOverlay.IsVisible = true;
     }
 
-    // import deck modal
     private void OpenImportDeckModal(object? sender, EventArgs e)
     {
         var importName = new Entry { Placeholder = "Deck Name...", TextColor = Colors.White, BackgroundColor = Colors.Black };
@@ -209,10 +182,15 @@ public partial class SourceMaterial : ContentPage
 
         saveBtn.Clicked += async (s, ev) => {
             if (string.IsNullOrWhiteSpace(importName.Text) || string.IsNullOrWhiteSpace(streamData.Text)) return;
-            await _dbService.ImportDeckFromTextAsync(importName.Text.Trim(), streamData.Text);
 
-            GameSettings.SelectedDeckName = importName.Text.Trim();
-            DeckDropdownButton.Text = $"ACTIVE DECK: {GameSettings.SelectedDeckName.ToUpper()} ▾";
+            var newDeck = await _dbService.CreateDeckAsync(importName.Text.Trim());
+            await _dbService.ImportDeckFromTextAsync(newDeck.Name, streamData.Text, clearExisting: true, false, newDeck.Uid);
+
+            GameSettings.SelectedDeckName = newDeck.Name;
+            GameSettings.SelectedDeckUid = newDeck.Uid;
+
+            string shortenedUid = newDeck.Uid.Length > 5 ? newDeck.Uid.Substring(0, 5) : newDeck.Uid;
+            DeckDropdownButton.Text = $"ACTIVE DECK: {GameSettings.SelectedDeckName.ToUpper()} ({shortenedUid})";
             SetupPopupOverlay.IsVisible = false;
         };
 
@@ -222,16 +200,15 @@ public partial class SourceMaterial : ContentPage
         SetupPopupOverlay.IsVisible = true;
     }
 
-    // launch match
     private async void OnFinalLaunchClicked(object? sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName))
+        if (string.IsNullOrWhiteSpace(GameSettings.SelectedDeckUid))
         {
             await DisplayAlert("SELECTION REQUIRED", "Please select or create a deck before launching.", "OK");
             return;
         }
 
-        var deck = await _dbService.GetDeckByNameAsync(GameSettings.SelectedDeckName);
+        var deck = await _dbService.GetDeckByUidAsync(GameSettings.SelectedDeckUid);
         if (deck == null)
         {
             await DisplayAlert("DECK NOT FOUND", "Selected deck does not exist in the database.", "OK");
@@ -250,7 +227,6 @@ public partial class SourceMaterial : ContentPage
             parsedTimer = Math.Clamp(parsedTimer, 0, 100);
             GameSettings.TimeLimitSeconds = parsedTimer == 0 ? -1 : parsedTimer;
         }
-
         await Navigation.PushAsync(new MainPage());
     }
 }

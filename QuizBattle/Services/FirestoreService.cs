@@ -48,11 +48,48 @@ public class FirestoreService
     }
 
     // --- LEADERBOARD METHODS ---
-    public async Task SubmitLeaderboardScore(string localId, string displayName, string deckName, int score)
+    public async Task SubmitLeaderboardScore(string localId, string displayName, string deckName, int score, string idToken)
     {
         using HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", idToken);
+
         string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents/leaderboards/{Uri.EscapeDataString(deckName)}_{localId}";
-        await client.PatchAsJsonAsync(url, new { fields = new { localId = new { stringValue = localId }, displayName = new { stringValue = displayName }, deckName = new { stringValue = deckName }, score = new { integerValue = score } } });
+        var body = new { fields = new { localId = new { stringValue = localId }, displayName = new { stringValue = displayName }, deckName = new { stringValue = deckName }, score = new { integerValue = score.ToString() } } };
+        await client.PatchAsJsonAsync(url, body);
+
+        List<string> documentPathsToDelete = new List<string>();
+        string queryUrl = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
+        var queryBody = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckName" }, op = "EQUAL", value = new { stringValue = deckName } } }, orderBy = new[] { new { field = new { fieldPath = "score" }, direction = "DESCENDING" } } } };
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(queryUrl, queryBody);
+        if (response.IsSuccessStatusCode)
+        {
+            using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            int rank = 1;
+            foreach (JsonElement element in document.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("document", out JsonElement doc))
+                {
+                    if (rank > 10)
+                    {
+                        if (doc.TryGetProperty("name", out JsonElement nameProp))
+                        {
+                            documentPathsToDelete.Add(nameProp.GetString() ?? "");
+                        }
+                    }
+                    rank++;
+                }
+            }
+        }
+
+        foreach (string docPath in documentPathsToDelete)
+        {
+            if (!string.IsNullOrWhiteSpace(docPath))
+            {
+                string deleteUrl = $"https://firestore.googleapis.com/v1/{docPath}";
+                await client.DeleteAsync(deleteUrl);
+            }
+        }
     }
 
     public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(string deckName)
@@ -62,11 +99,21 @@ public class FirestoreService
         var body = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckName" }, op = "EQUAL", value = new { stringValue = deckName } } }, orderBy = new[] { new { field = new { fieldPath = "score" }, direction = "DESCENDING" } } } };
         HttpResponseMessage response = await client.PostAsJsonAsync(url, body);
         var results = new List<LeaderboardEntry>();
+
+        if (!response.IsSuccessStatusCode) return results;
+
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         foreach (JsonElement element in document.RootElement.EnumerateArray())
         {
             if (element.TryGetProperty("document", out JsonElement doc) && doc.TryGetProperty("fields", out JsonElement fields))
-                results.Add(new LeaderboardEntry { DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? "", Score = int.Parse(fields.GetProperty("score").GetProperty("integerValue").GetString() ?? "0") });
+            {
+                string rawScore = fields.TryGetProperty("score", out var s) ? (s.TryGetProperty("integerValue", out var iv) ? iv.GetString() ?? "0" : "0") : "0";
+                results.Add(new LeaderboardEntry
+                {
+                    DisplayName = fields.TryGetProperty("displayName", out var dn) ? dn.GetProperty("stringValue").GetString() ?? "Anonymous" : "Anonymous",
+                    Score = int.Parse(rawScore)
+                });
+            }
         }
         return results;
     }
@@ -80,25 +127,30 @@ public class FirestoreService
         HttpResponseMessage response = await client.PostAsJsonAsync(url, body);
         var decks = new List<DeckEntity>();
         if (!response.IsSuccessStatusCode) return decks;
+
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         foreach (JsonElement element in document.RootElement.EnumerateArray())
         {
             if (element.TryGetProperty("document", out JsonElement doc) && doc.TryGetProperty("fields", out JsonElement fields))
             {
+                string fullPathName = doc.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";
+                string parsedCloudUid = Path.GetFileName(fullPathName);
+
                 decks.Add(new DeckEntity
                 {
                     Name = fields.TryGetProperty("deckName", out var n) ? n.GetProperty("stringValue").GetString() ?? "" : "",
-                    Description = fields.TryGetProperty("content", out var c) ? c.GetProperty("stringValue").GetString() ?? "" : ""
+                    Description = fields.TryGetProperty("content", out var c) ? c.GetProperty("stringValue").GetString() ?? "" : "",
+                    Uid = parsedCloudUid
                 });
             }
         }
         return string.IsNullOrWhiteSpace(searchTerm) ? decks : decks.Where(d => d.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
-    public async Task UploadDeckToCloudAsync(string deckName, string deckContent)
+    public async Task FileUploadDeckToCloudAsync(string deckName, string deckContent, string deckUid)
     {
         using HttpClient client = new HttpClient();
-        string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents/global_decks/{Uri.EscapeDataString(deckName)}";
+        string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents/global_decks/{Uri.EscapeDataString(deckUid)}";
         await client.PatchAsJsonAsync(url, new { fields = new { deckName = new { stringValue = deckName }, content = new { stringValue = deckContent } } });
     }
 }

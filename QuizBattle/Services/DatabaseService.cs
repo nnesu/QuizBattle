@@ -10,20 +10,15 @@ namespace QuizBattle.Services
         public async Task InitAsync()
         {
             if (_db != null) return;
-
-            // initialize sqlite
             SQLitePCL.Batteries_V2.Init();
-            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuizBattle.db3");
+            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuizBattle_v2.db3");
             _db = new SQLiteAsyncConnection(dbPath);
-
             await _db.CreateTableAsync<DeckEntity>();
             await _db.CreateTableAsync<QuestionEntity>();
             await _db.CreateTableAsync<DeckMasteryEntity>();
-
             await MigrateLegacyTextFilesAsync();
         }
 
-        // deck operations
         public async Task<List<DeckEntity>> GetDecksAsync()
         {
             await InitAsync();
@@ -40,14 +35,24 @@ namespace QuizBattle.Services
             return allDecks.FirstOrDefault(d => d.Name.Equals(cleanName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public async Task<DeckEntity> CreateDeckAsync(string name)
+        public async Task<DeckEntity?> GetDeckByUidAsync(string uid)
+        {
+            await InitAsync();
+            if (string.IsNullOrWhiteSpace(uid)) return null;
+            return await _db!.Table<DeckEntity>().FirstOrDefaultAsync(d => d.Uid == uid);
+        }
+
+        public async Task<DeckEntity> CreateDeckAsync(string name, bool isReadOnly = false, string? customUid = null)
         {
             await InitAsync();
             string cleanName = name.Trim();
-            var existing = await GetDeckByNameAsync(cleanName);
-            if (existing != null) return existing;
 
-            var newDeck = new DeckEntity { Name = cleanName };
+            var newDeck = new DeckEntity
+            {
+                Name = cleanName,
+                Uid = string.IsNullOrWhiteSpace(customUid) ? Guid.NewGuid().ToString() : customUid,
+                IsReadOnly = isReadOnly
+            };
             await _db!.InsertAsync(newDeck);
             return newDeck;
         }
@@ -56,7 +61,7 @@ namespace QuizBattle.Services
         {
             await InitAsync();
             var deck = await _db!.Table<DeckEntity>().FirstOrDefaultAsync(d => d.Id == deckId);
-            if (deck != null)
+            if (deck != null && !deck.IsReadOnly)
             {
                 deck.Name = newName.Trim();
                 await _db.UpdateAsync(deck);
@@ -70,7 +75,6 @@ namespace QuizBattle.Services
             await _db!.DeleteAsync<DeckEntity>(deckId);
         }
 
-        // question operations
         public async Task<List<QuestionEntity>> GetQuestionsForDeckAsync(int deckId)
         {
             await InitAsync();
@@ -92,28 +96,21 @@ namespace QuizBattle.Services
             await _db!.DeleteAsync<QuestionEntity>(questionId);
         }
 
-        // import and export text formats
-        public async Task ImportDeckFromTextAsync(string deckName, string rawText, bool clearExisting = false)
+        public async Task ImportDeckFromTextAsync(string deckName, string rawText, bool clearExisting = false, bool isReadOnly = false, string? customUid = null)
         {
             await InitAsync();
-            var deck = await CreateDeckAsync(deckName);
-
+            var deck = await CreateDeckAsync(deckName, isReadOnly, customUid);
             if (clearExisting)
             {
                 await _db!.ExecuteAsync("DELETE FROM Questions WHERE DeckId = ?", deck.Id);
             }
-
             string[] lines = rawText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
             foreach (string line in lines)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
-
                 string[] parts = line.Split('|');
                 if (parts.Length < 3) continue;
-
                 string type = parts[0].Trim();
-
                 if (type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
                 {
                     var q = new QuestionEntity
@@ -144,9 +141,7 @@ namespace QuizBattle.Services
         {
             await InitAsync();
             var questions = await GetQuestionsForDeckAsync(deckId);
-
             List<string> lines = new List<string>();
-
             foreach (var q in questions)
             {
                 if (q.Type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
@@ -160,28 +155,23 @@ namespace QuizBattle.Services
                     string opt2 = opts.Length > 1 ? opts[1] : "";
                     string opt3 = opts.Length > 2 ? opts[2] : "";
                     string opt4 = opts.Length > 3 ? opts[3] : "";
-
                     lines.Add($"MultipleChoice|{q.Text}|{opt1}|{opt2}|{opt3}|{opt4}|ANS|{q.AnswersRaw}");
                 }
             }
-
             return string.Join(Environment.NewLine, lines);
         }
 
-        // legacy text file migration
         private async Task MigrateLegacyTextFilesAsync()
         {
             try
             {
                 string decksFolder = Path.Combine(FileSystem.AppDataDirectory, "Decks");
                 if (!Directory.Exists(decksFolder)) return;
-
                 var txtFiles = Directory.GetFiles(decksFolder, "*.txt");
                 foreach (var file in txtFiles)
                 {
                     string name = Path.GetFileNameWithoutExtension(file);
                     var existingDeck = await GetDeckByNameAsync(name);
-
                     if (existingDeck == null)
                     {
                         string text = await File.ReadAllTextAsync(file);
@@ -198,7 +188,6 @@ namespace QuizBattle.Services
             }
         }
 
-        // Deck Mastery Operations
         public async Task<DeckMasteryEntity> GetDeckMasteryAsync(int deckId)
         {
             await InitAsync();
@@ -209,15 +198,9 @@ namespace QuizBattle.Services
         {
             await InitAsync();
             var mastery = await GetDeckMasteryAsync(deckId);
-
             if (mastery == null)
             {
-                mastery = new DeckMasteryEntity
-                {
-                    DeckId = deckId,
-                    HighScore = newScore,
-                    LastPlayed = DateTime.Now
-                };
+                mastery = new DeckMasteryEntity { DeckId = deckId, HighScore = newScore, LastPlayed = DateTime.Now };
                 await _db!.InsertAsync(mastery);
             }
             else if (newScore > mastery.HighScore)

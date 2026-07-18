@@ -8,12 +8,17 @@ namespace QuizBattle.Models
         [SQLite.PrimaryKey, SQLite.AutoIncrement]
         public int Id { get; set; }
 
-        [SQLite.Unique, SQLite.NotNull]
+        [SQLite.NotNull]
         public string Name { get; set; } = string.Empty;
 
-        // Added this field for Firestore compatibility
-        [SQLite.Ignore] // Prevents SQLite from trying to create a column for this in the DB
+        [SQLite.Unique, SQLite.NotNull]
+        public string Uid { get; set; } = string.Empty; // UNIQUE RANDOM RUNTIME TOKEN
+
+        [SQLite.Ignore]
         public string Description { get; set; } = string.Empty;
+
+        [SQLite.NotNull]
+        public bool IsReadOnly { get; set; } = false;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
@@ -33,10 +38,7 @@ namespace QuizBattle.Models
         [SQLite.NotNull]
         public string Text { get; set; } = string.Empty;
 
-        // Serialized option choices: "Opt1|Opt2|Opt3|Opt4"
         public string OptionsRaw { get; set; } = string.Empty;
-
-        // Serialized answer text: "AnswerText"
         public string AnswersRaw { get; set; } = string.Empty;
 
         public int TimesAsked { get; set; } = 0;

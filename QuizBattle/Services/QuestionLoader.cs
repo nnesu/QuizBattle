@@ -7,25 +7,20 @@ namespace QuizBattle.Services
     {
         private readonly DatabaseService _dbService = new DatabaseService();
 
-        // load questions from database
-        public async Task<List<Question>> LoadQuestionsAsync(string deckName)
+        public async Task<List<Question>> LoadQuestionsAsync(string deckUid)
         {
             List<Question> questions = new List<Question>();
-
             try
             {
                 await _dbService.InitAsync();
-                string cleanDeckName = Path.GetFileNameWithoutExtension(deckName);
-
-                var deck = await _dbService.GetDeckByNameAsync(cleanDeckName);
+                var deck = await _dbService.GetDeckByUidAsync(deckUid);
                 if (deck == null)
                 {
-                    Debug.WriteLine($"[QuestionLoader] Deck '{cleanDeckName}' not found in database.");
+                    Debug.WriteLine($"[QuestionLoader] Deck Uid '{deckUid}' not found in database.");
                     return questions;
                 }
 
                 var dbQuestions = await _dbService.GetQuestionsForDeckAsync(deck.Id);
-
                 foreach (var entity in dbQuestions)
                 {
                     var q = new Question
@@ -46,14 +41,12 @@ namespace QuizBattle.Services
                     {
                         q.Type = QuestionType.MultipleChoice;
                         q.CorrectAnswers.Add(entity.AnswersRaw);
-
                         string[] options = entity.OptionsRaw.Split('|');
                         foreach (string opt in options)
                         {
                             q.Options.Add(opt);
                         }
                     }
-
                     questions.Add(q);
                 }
             }
@@ -61,7 +54,6 @@ namespace QuizBattle.Services
             {
                 Debug.WriteLine($"Error loading questions from database: {ex.Message}");
             }
-
             return questions;
         }
     }

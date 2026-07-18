@@ -19,7 +19,8 @@ public partial class DecksPage : ContentPage
         int row = 0, col = 0;
         foreach (var deck in decks)
         {
-            var btn = new Button { Text = deck.Name.ToUpper(), HeightRequest = 100, BackgroundColor = Color.FromArgb("#17274A"), TextColor = Colors.White, CornerRadius = 18, FontAttributes = FontAttributes.Bold };
+            string displayTitle = deck.IsReadOnly ? $"{deck.Name.ToUpper()} (CLOUD)" : deck.Name.ToUpper();
+            var btn = new Button { Text = displayTitle, HeightRequest = 100, BackgroundColor = Color.FromArgb("#17274A"), TextColor = Colors.White, CornerRadius = 18, FontAttributes = FontAttributes.Bold };
             btn.Clicked += (s, e) => ViewDeck(deck);
             Grid.SetRow(btn, row); Grid.SetColumn(btn, col);
             DecksGrid.Children.Add(btn);
@@ -27,14 +28,22 @@ public partial class DecksPage : ContentPage
         }
     }
 
-    private void ViewDeck(DeckEntity deck) { _currentDeck = deck; DeckTitleLabel.Text = deck.Name.ToUpper(); DecksView.IsVisible = false; CardsView.IsVisible = true; LoadCards(); }
+    private void ViewDeck(DeckEntity deck)
+    {
+        _currentDeck = deck;
+        DeckTitleLabel.Text = deck.Name.ToUpper();
+        DecksView.IsVisible = false;
+        CardsView.IsVisible = true;
+
+        RenameDeckBtn.IsVisible = !deck.IsReadOnly;
+        ModificationControlsFooter.IsVisible = !deck.IsReadOnly;
+
+        LoadCards();
+    }
+
     private void CloseCardsView(object? sender, EventArgs e) { CardsView.IsVisible = false; DecksView.IsVisible = true; LoadDecks(); }
     private async void OnBackClicked(object? sender, EventArgs e) => await Navigation.PopAsync();
-
-    private async void OnSearchGlobalClicked(object sender, EventArgs e)
-    {
-        await Navigation.PushAsync(new SearchDecksPage());
-    }
+    private async void OnSearchGlobalClicked(object sender, EventArgs e) { await Navigation.PushAsync(new SearchDecksPage()); }
 
     private async void OnUploadDeckClicked(object sender, EventArgs e)
     {
@@ -42,7 +51,7 @@ public partial class DecksPage : ContentPage
         if (await DisplayAlert("Publish", $"Upload '{_currentDeck.Name}'?", "YES", "NO"))
         {
             string deckText = await _dbService.ExportDeckToTextAsync(_currentDeck.Id);
-            await _firestoreService.UploadDeckToCloudAsync(_currentDeck.Name, deckText);
+            await _firestoreService.FileUploadDeckToCloudAsync(_currentDeck.Name, deckText, _currentDeck.Uid);
             await DisplayAlert("Success", "Uploaded!", "OK");
         }
     }
@@ -64,6 +73,7 @@ public partial class DecksPage : ContentPage
 
     public void OpenGenerateCardsPopup(object? sender, EventArgs e)
     {
+        if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "GENERATE", BackgroundColor = Color.FromArgb("#14B8A6") };
         btn.Clicked += async (s, ev) => { await _dbService.ImportDeckFromTextAsync(_currentDeck!.Name, await _aiService.GenerateQuestionsAsync(editor.Text, 10)); DismissActivePopup(null, null!); LoadCards(); };
@@ -72,6 +82,7 @@ public partial class DecksPage : ContentPage
 
     public void OpenCreateCardPopup(object? sender, EventArgs e)
     {
+        if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 80, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "CREATE", BackgroundColor = Color.FromArgb("#8B5CF6") };
         btn.Clicked += async (s, ev) => { await _dbService.ImportDeckFromTextAsync(_currentDeck!.Name, editor.Text); DismissActivePopup(null, null!); LoadCards(); };
@@ -80,6 +91,7 @@ public partial class DecksPage : ContentPage
 
     public void OpenImportPopup(object? sender, EventArgs e)
     {
+        if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "IMPORT", BackgroundColor = Color.FromArgb("#A8DADC") };
         btn.Clicked += async (s, ev) => { await _dbService.ImportDeckFromTextAsync(_currentDeck!.Name, editor.Text); DismissActivePopup(null, null!); LoadCards(); };
@@ -96,14 +108,31 @@ public partial class DecksPage : ContentPage
 
     private void OpenEditCardPopup(QuestionEntity question)
     {
-        var editor = new Editor { Text = question.Text, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White };
-        var saveBtn = new Button { Text = "SAVE", BackgroundColor = Color.FromArgb("#2A9D8F") };
-        saveBtn.Clicked += async (s, ev) => { question.Text = editor.Text; await _dbService.SaveQuestionAsync(question); DismissActivePopup(null, null!); LoadCards(); };
-        ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Edit Card" }, editor, saveBtn } });
+        bool isReadOnly = _currentDeck?.IsReadOnly ?? false;
+        var editor = new Editor { Text = question.Text, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White, IsReadOnly = isReadOnly };
+        var saveBtn = new Button { Text = "SAVE", BackgroundColor = Color.FromArgb("#2A9D8F"), IsVisible = !isReadOnly };
+
+        saveBtn.Clicked += async (s, ev) => {
+            question.Text = editor.Text;
+            await _dbService.SaveQuestionAsync(question);
+            DismissActivePopup(null, null!);
+            LoadCards();
+        };
+
+        var layout = new VerticalStackLayout { Children = { new Label { Text = isReadOnly ? "View Card" : "Edit Card" }, editor } };
+        if (!isReadOnly) layout.Children.Add(saveBtn);
+        ShowPopup(layout);
     }
 
     public async void OnAddNewDeckClicked(object? sender, EventArgs e) { await _dbService.CreateDeckAsync(await DisplayPromptAsync("NEW DECK", "Name:")); LoadDecks(); }
-    private async void OnRenameDeckClicked(object? sender, EventArgs e) { await _dbService.RenameDeckAsync(_currentDeck!.Id, await DisplayPromptAsync("RENAME", "New name:", initialValue: _currentDeck.Name) ?? _currentDeck.Name); DeckTitleLabel.Text = _currentDeck.Name.ToUpper(); }
+
+    private async void OnRenameDeckClicked(object? sender, EventArgs e)
+    {
+        if (_currentDeck == null || _currentDeck.IsReadOnly) return;
+        await _dbService.RenameDeckAsync(_currentDeck.Id, await DisplayPromptAsync("RENAME", "New name:", initialValue: _currentDeck.Name) ?? _currentDeck.Name);
+        DeckTitleLabel.Text = _currentDeck.Name.ToUpper();
+    }
+
     private async void OnDeleteDeckClicked(object? sender, EventArgs e) { await _dbService.DeleteDeckAsync(_currentDeck!.Id); CloseCardsView(null, null!); }
     private void DismissActivePopup(object? sender, EventArgs e) => PopupBackground.IsVisible = false;
     private void ShowPopup(View view) { PopupContentStack.Children.Clear(); PopupContentStack.Children.Add(view); PopupBackground.IsVisible = true; }

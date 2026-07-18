@@ -10,7 +10,6 @@ public partial class SearchDecksPage : ContentPage
 
     public SearchDecksPage() { InitializeComponent(); }
 
-    // Automatically load all decks when the page appears
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -19,7 +18,6 @@ public partial class SearchDecksPage : ContentPage
 
     private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
     {
-        // Now handles both empty and typed searches
         SearchResultsView.ItemsSource = await _firestoreService.SearchGlobalDecksAsync(e.NewTextValue ?? "");
     }
 
@@ -29,7 +27,6 @@ public partial class SearchDecksPage : ContentPage
         {
             var editor = new Editor { Text = deck.Description, IsReadOnly = true, HeightRequest = 200, BackgroundColor = Colors.Black, TextColor = Colors.White };
             var saveBtn = new Button { Text = "SAVE TO MY DECKS", BackgroundColor = Color.FromArgb("#8B5CF6") };
-
             var popupLayout = new VerticalStackLayout { Padding = 20, Spacing = 10, BackgroundColor = Color.FromArgb("#091121") };
             popupLayout.Children.Add(new Label { Text = $"PREVIEW: {deck.Name}", FontSize = 18, TextColor = Colors.White, FontAttributes = FontAttributes.Bold });
             popupLayout.Children.Add(editor);
@@ -38,7 +35,7 @@ public partial class SearchDecksPage : ContentPage
             var previewPage = new ContentPage { Content = popupLayout };
 
             saveBtn.Clicked += async (s, ev) => {
-                await _dbService.ImportDeckFromTextAsync(deck.Name, deck.Description);
+                await _dbService.ImportDeckFromTextAsync(deck.Name, deck.Description, false, true, deck.Uid);
                 await DisplayAlert("Success", "Deck added to your local library!", "OK");
                 await Navigation.PopModalAsync();
                 await Navigation.PopAsync();

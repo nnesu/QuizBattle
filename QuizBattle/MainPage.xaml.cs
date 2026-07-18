@@ -41,7 +41,6 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
-
         optionButtons = new Button[]
         {
             OptionButton1,
@@ -49,7 +48,6 @@ public partial class MainPage : ContentPage
             OptionButton3,
             OptionButton4
         };
-
         LivesLayout.SizeChanged += LivesLayout_SizeChanged;
     }
 
@@ -93,9 +91,7 @@ public partial class MainPage : ContentPage
         battleTimer?.Stop();
         quizTimer.Stop();
 
-        // Reset metrics on defeat
         ResetScoreMetrics();
-
         await HandleDefeat("TIME'S UP!", "YOU RAN OUT OF TIME.");
     }
 
@@ -108,12 +104,7 @@ public partial class MainPage : ContentPage
         }
 
         QuestionLoader loader = new QuestionLoader();
-
-        string deckFile = string.IsNullOrWhiteSpace(GameSettings.SelectedDeckName)
-            ? "QuestionList.txt"
-            : GameSettings.SelectedDeckName;
-
-        battleQuestions = await loader.LoadQuestionsAsync(deckFile);
+        battleQuestions = await loader.LoadQuestionsAsync(GameSettings.SelectedDeckUid);
 
         foreach (var q in battleQuestions)
         {
@@ -142,13 +133,13 @@ public partial class MainPage : ContentPage
 
         int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
         if (totalHitsNeeded <= 0) totalHitsNeeded = 1;
-        damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
 
+        damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
 
-        // Clear all tracking structures
         ResetScoreMetrics();
+
         int baseTimeLimit = GameSettings.TimeLimitSeconds == -1 ? 15 : GameSettings.TimeLimitSeconds;
         totalMaxTimeAllowed = totalHitsNeeded * baseTimeLimit;
 
@@ -237,7 +228,6 @@ public partial class MainPage : ContentPage
 
         battleTimer?.Stop();
 
-        // Calculate current subtotal running core points
         int subtotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
         if (subtotal < 0) subtotal = 0;
 
@@ -281,7 +271,6 @@ public partial class MainPage : ContentPage
     {
         LivesLayout.Children.Clear();
         double size = heartSize <= 0 ? 28 : heartSize;
-
         for (int i = 0; i < playerLives; i++)
         {
             var img = new Image
@@ -322,7 +311,6 @@ public partial class MainPage : ContentPage
             TimeLabel.Text = "TIME:              ";
             return;
         }
-
         TimeSpan time = TimeSpan.FromSeconds(timeRemaining);
         TimeLabel.Text = $"TIME: {time:mm\\:ss}";
     }
@@ -333,11 +321,9 @@ public partial class MainPage : ContentPage
         {
             QuestionLabel.Text = "YOU WIN!";
             AnswerEntry.IsEnabled = false;
-
             battleTimer?.Stop();
             quizTimer.Stop();
 
-            // Calculate core performance before time bonus
             int preBonusTotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
             if (preBonusTotal < 0) preBonusTotal = 0;
 
@@ -348,7 +334,6 @@ public partial class MainPage : ContentPage
             double timeSavedRatio = totalMaxTimeAllowed > 0 ? (secondsSaved / totalMaxTimeAllowed) : 0;
             int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
 
-            // Inject final modifications to base metrics
             baseQuestionsScore += bonusPoints;
             _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
             return;
@@ -395,7 +380,6 @@ public partial class MainPage : ContentPage
         {
             MultipleChoiceLayout.IsVisible = true;
             Button[] buttons = { OptionButton1, OptionButton2, OptionButton3, OptionButton4 };
-
             for (int index = 0; index < buttons.Length; index++)
             {
                 if (index < currentQuestion.Options.Count)
@@ -444,19 +428,16 @@ public partial class MainPage : ContentPage
         try
         {
             DatabaseService db = new DatabaseService();
-            var currentDeck = await db.GetDeckByNameAsync(GameSettings.SelectedDeckName);
-
+            var currentDeck = await db.GetDeckByUidAsync(GameSettings.SelectedDeckUid);
             if (currentDeck != null)
             {
-                // 1. Save Local Mastery
                 await db.SaveDeckMasteryAsync(currentDeck.Id, finalScore);
 
-                // 2. Push to Global Leaderboard if logged in
                 if (QuizBattle.Helpers.SessionManager.IsLoggedIn())
                 {
                     var user = QuizBattle.Helpers.SessionManager.GetUser();
                     FirestoreService firestore = new FirestoreService();
-                    await firestore.SubmitLeaderboardScore(user.LocalId, user.DisplayName, currentDeck.Name, finalScore);
+                    await firestore.SubmitLeaderboardScore(user.LocalId, user.DisplayName, currentDeck.Name, finalScore, user.IdToken);
                 }
             }
         }
@@ -465,18 +446,15 @@ public partial class MainPage : ContentPage
             System.Diagnostics.Debug.WriteLine($"Failed to save score: {ex.Message}");
         }
 
-        // Commit final adjusted performance to global scope
         baseQuestionsScore = finalScore;
         totalStreakBonusEarned = 0;
         totalPenaltiesDeducted = 0;
-
         await HandleVictory();
     }
 
     private void OptionClicked(object sender, EventArgs e)
     {
         Button clickedButton = (Button)sender;
-
         if (selectedOptions.Contains(clickedButton.Text))
         {
             selectedOptions.Remove(clickedButton.Text);
@@ -534,17 +512,13 @@ public partial class MainPage : ContentPage
             ResultLabel.Text = "CORRECT!";
             ResultLabel.TextColor = Colors.Green;
 
-            // 1. Calculate Score Categorizations cleanly
-            baseQuestionsScore += 1; // Exactly 1 point per correct answer item
-
+            baseQuestionsScore += 1;
             if (currentStreak > 0)
             {
-                // If they have a running streak, everything above the base point is the extra streak bonus
                 totalStreakBonusEarned += currentStreak;
             }
             currentStreak++;
 
-            // 2. Track internal progress fields
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
 
@@ -572,12 +546,8 @@ public partial class MainPage : ContentPage
             ResultLabel.Text = "INCORRECT!";
             ResultLabel.TextColor = Colors.Red;
 
-            // Break streak tracking
             currentStreak = 0;
-
-            // Accumulate explicit mistake penalties separately
             totalPenaltiesDeducted += 1;
-
             currentQuestion.TimesIncorrect++;
 
             if (!GameSettings.IsZenMode)
@@ -591,7 +561,7 @@ public partial class MainPage : ContentPage
         if (!GameSettings.IsZenMode && playerLives <= 0)
         {
             quizTimer.Stop();
-            ResetScoreMetrics(); // Score wipes out instantly on death
+            ResetScoreMetrics();
             await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
             return;
         }
