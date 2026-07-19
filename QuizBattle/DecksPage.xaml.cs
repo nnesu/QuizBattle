@@ -10,21 +10,85 @@ public partial class DecksPage : ContentPage
     private readonly FirestoreService _firestoreService = new FirestoreService();
     private DeckEntity? _currentDeck;
 
-    public DecksPage() { InitializeComponent(); LoadDecks(); }
+    public DecksPage()
+    {
+        InitializeComponent();
+        LoadDecks();
+    }
 
     private async void LoadDecks()
     {
         DecksGrid.Children.Clear();
         var decks = await _dbService.GetDecksAsync();
         int row = 0, col = 0;
+
         foreach (var deck in decks)
         {
-            string displayTitle = deck.IsReadOnly ? $"{deck.Name.ToUpper()} (CLOUD)" : deck.Name.ToUpper();
-            var btn = new Button { Text = displayTitle, HeightRequest = 100, BackgroundColor = Color.FromArgb("#17274A"), TextColor = Colors.White, CornerRadius = 18, FontAttributes = FontAttributes.Bold };
+            // Main item block container layout cell
+            var cellContainer = new VerticalStackLayout
+            {
+                Spacing = 6,
+                HorizontalOptions = LayoutOptions.Fill
+            };
+
+            // Main interaction card button (displays clean deck title)
+            var btn = new Button
+            {
+                Text = deck.Name.ToUpper(),
+                HeightRequest = 100,
+                BackgroundColor = Color.FromArgb("#17274A"),
+                TextColor = Colors.White,
+                CornerRadius = 18,
+                FontAttributes = FontAttributes.Bold
+            };
             btn.Clicked += (s, e) => ViewDeck(deck);
-            Grid.SetRow(btn, row); Grid.SetColumn(btn, col);
-            DecksGrid.Children.Add(btn);
-            col++; if (col > 1) { col = 0; row++; }
+            cellContainer.Children.Add(btn);
+
+            // Side-by-side layout deck configuration tags strip container
+            var tagsLayout = new HorizontalStackLayout
+            {
+                Spacing = 8,
+                HorizontalOptions = LayoutOptions.Center
+            };
+
+            // TAG 1: Origin Flag Label (Always Visible)
+            var originTag = new Label
+            {
+                Text = deck.IsReadOnly ? "☁️ CLOUD" : "💻 LOCAL",
+                TextColor = deck.IsReadOnly ? Color.FromArgb("#A78BFA") : Color.FromArgb("#94A3B8"), // Purple for cloud, Slate for local
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold
+            };
+            tagsLayout.Children.Add(originTag);
+
+            // TAG 2: Status Indicator Flag Label (Conditional: Beaten or Blank)
+            var mastery = await _dbService.GetDeckMasteryAsync(deck.Id);
+            if (mastery != null && mastery.HighScore > 0)
+            {
+                var beatenTag = new Label
+                {
+                    Text = "⚔️ BEATEN",
+                    TextColor = Color.FromArgb("#5EEAD4"), // Neon theme accent contrast text color color map
+                    FontSize = 11,
+                    FontAttributes = FontAttributes.Bold
+                };
+                tagsLayout.Children.Add(beatenTag);
+            }
+
+            // Append the compiled tags strip container to the parent cell card stack block
+            cellContainer.Children.Add(tagsLayout);
+
+            // Route the cell item element out to the primary UI dashboard collection grid slots
+            Grid.SetRow(cellContainer, row);
+            Grid.SetColumn(cellContainer, col);
+            DecksGrid.Children.Add(cellContainer);
+
+            col++;
+            if (col > 1)
+            {
+                col = 0;
+                row++;
+            }
         }
     }
 
@@ -34,10 +98,8 @@ public partial class DecksPage : ContentPage
         DeckTitleLabel.Text = deck.Name.ToUpper();
         DecksView.IsVisible = false;
         CardsView.IsVisible = true;
-
         RenameDeckBtn.IsVisible = !deck.IsReadOnly;
         ModificationControlsFooter.IsVisible = !deck.IsReadOnly;
-
         LoadCards();
     }
 
@@ -76,7 +138,6 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "GENERATE", BackgroundColor = Color.FromArgb("#14B8A6") };
-
         btn.Clicked += async (s, ev) => {
             string generatedText = await _aiService.GenerateQuestionsAsync(editor.Text, 10);
             string[] lines = generatedText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -95,7 +156,6 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 80, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "CREATE", BackgroundColor = Color.FromArgb("#8B5CF6") };
-
         btn.Clicked += async (s, ev) => {
             if (string.IsNullOrWhiteSpace(editor.Text)) return;
             await SaveRawLineToCurrentDeckAsync(editor.Text);
@@ -110,7 +170,6 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "IMPORT", BackgroundColor = Color.FromArgb("#A8DADC") };
-
         btn.Clicked += async (s, ev) => {
             if (string.IsNullOrWhiteSpace(editor.Text)) return;
             string[] lines = editor.Text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -129,7 +188,6 @@ public partial class DecksPage : ContentPage
         if (string.IsNullOrWhiteSpace(line) || _currentDeck == null) return;
         string[] parts = line.Split('|');
         if (parts.Length < 3) return;
-
         string type = parts[0].Trim();
         if (type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
         {
