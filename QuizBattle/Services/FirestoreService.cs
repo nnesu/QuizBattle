@@ -51,11 +51,10 @@ public class FirestoreService
     public async Task SubmitLeaderboardScore(string localId, string displayName, string deckUid, int score, string idToken)
     {
         using HttpClient client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", idToken);
 
         string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents/leaderboards/{Uri.EscapeDataString(deckUid)}_{localId}";
 
-        // Using deckUid as the property field key name perfectly
+        // Payload configured to use clean deckUid keys natively
         var body = new { fields = new { localId = new { stringValue = localId }, displayName = new { stringValue = displayName }, deckUid = new { stringValue = deckUid }, score = new { integerValue = score.ToString() } } };
 
         var uploadResponse = await client.PatchAsJsonAsync(url, body);
@@ -68,8 +67,6 @@ public class FirestoreService
 
         List<string> documentPathsToDelete = new List<string>();
         string queryUrl = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
-
-        // No orderBy here -> Bypasses the Index requirement completely!
         var queryBody = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckUid" }, op = "EQUAL", value = new { stringValue = deckUid } } } } };
 
         HttpResponseMessage response = await client.PostAsJsonAsync(queryUrl, queryBody);
@@ -98,7 +95,6 @@ public class FirestoreService
                 }
             }
 
-            // Clean up old entries over client-side memory definitions
             var losers = temporaryList.OrderByDescending(x => x.Score).Skip(10).ToList();
             foreach (var loser in losers)
             {
@@ -119,7 +115,6 @@ public class FirestoreService
     public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(string deckUid, string idToken)
     {
         using HttpClient client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", idToken);
 
         string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
         var body = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckUid" }, op = "EQUAL", value = new { stringValue = deckUid } } } } };
@@ -150,7 +145,6 @@ public class FirestoreService
             }
         }
 
-        // Sort rows descending client-side
         return results.OrderByDescending(r => r.Score).Take(10).ToList();
     }
 
