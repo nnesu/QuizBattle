@@ -17,7 +17,7 @@
             <VerticalStackLayout Padding="22,22,22,28" Spacing="0" MaximumWidthRequest="680">
                 <!-- Header -->
                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
-                    <Button Text="‹" Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0"
+                    <Button Text=" " Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0"
                             FontSize="30" FontAttributes="None" BackgroundColor="#17223E" TextColor="#D5DDF2"
                             BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
                     <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" Spacing="1">
@@ -28,6 +28,7 @@
                         <Label Text="READY" TextColor="#C4B5FD" FontSize="10" FontAttributes="Bold" />
                     </Border>
                 </Grid>
+
                 <Border Margin="0,26,0,0" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
                     <VerticalStackLayout Spacing="7">
                         <Label Text="CHOOSE YOUR CONDITIONS" TextColor="#8EA0C0" FontSize="11" FontAttributes="Bold" />
@@ -35,166 +36,133 @@
                         <Label Text="Select a difficulty and a deck, then launch when you're ready." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
                     </VerticalStackLayout>
                 </Border>
+
                 <!-- Difficulty -->
                 <Label Margin="0,28,0,10" Text="DIFFICULTY" TextColor="#A9B6CF" FontSize="11" FontAttributes="Bold" />
                 <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
-
                     <!-- EASY -->
                     <Border Grid.Column="0"
-            HeightRequest="120"
-            BackgroundColor="#173B39"
-            Stroke="#217C75"
-            StrokeThickness="1"
-            StrokeShape="RoundRectangle 16"
-            Padding="10">
-
+                            HeightRequest="120"
+                            BackgroundColor="#173B39"
+                            Stroke="#217C75"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="10">
                         <VerticalStackLayout
-            Spacing="5"
-            VerticalOptions="Center"
-            HorizontalOptions="Center">
-
+                            Spacing="5"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Center">
                             <CheckBox x:Name="EasyCheck"
-                      IsChecked="False"
-                      Color="#5EEAD4"
-                      CheckedChanged="OnDifficultyChanged"
-                      HorizontalOptions="Center"/>
-
+                                      IsChecked="False"
+                                      Color="#5EEAD4"
+                                      CheckedChanged="OnDifficultyChanged"
+                                      HorizontalOptions="Center"/>
                             <Label Text="EASY"
-                   TextColor="#CFFAFE"
-                   FontSize="13"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#CFFAFE"
+                                   FontSize="13"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"/>
                             <Label Text="30 seconds"
-                   TextColor="#91CFCB"
-                   FontSize="10"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#91CFCB"
+                                   FontSize="10"
+                                   HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
 
                     <!-- NORMAL -->
                     <Border Grid.Column="1"
-            HeightRequest="120"
-            BackgroundColor="#25234A"
-            Stroke="#6456B8"
-            StrokeThickness="1"
-            StrokeShape="RoundRectangle 16"
-            Padding="10">
-
+                            HeightRequest="120"
+                            BackgroundColor="#25234A"
+                            Stroke="#6456B8"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="10">
                         <VerticalStackLayout
-            Spacing="5"
-            VerticalOptions="Center"
-            HorizontalOptions="Center">
-
+                            Spacing="5"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Center">
                             <CheckBox x:Name="MediumCheck"
-                      IsChecked="True"
-                      Color="#A78BFA"
-                      CheckedChanged="OnDifficultyChanged"
-                      HorizontalOptions="Center"/>
-
+                                      IsChecked="True"
+                                      Color="#A78BFA"
+                                      CheckedChanged="OnDifficultyChanged"
+                                      HorizontalOptions="Center"/>
                             <Label Text="NORMAL"
-                   TextColor="#E9E4FF"
-                   FontSize="13"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#E9E4FF"
+                                   FontSize="13"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"/>
                             <Label Text="15 seconds"
-                   TextColor="#BDB3E8"
-                   FontSize="10"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#BDB3E8"
+                                   FontSize="10"
+                                   HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
 
                     <!-- HARD -->
                     <Border Grid.Column="2"
-            HeightRequest="120"
-            BackgroundColor="#3B202F"
-            Stroke="#99506A"
-            StrokeThickness="1"
-            StrokeShape="RoundRectangle 16"
-            Padding="10">
-
+                            HeightRequest="120"
+                            BackgroundColor="#3B202F"
+                            Stroke="#99506A"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="10">
                         <VerticalStackLayout
-            Spacing="5"
-            VerticalOptions="Center"
-            HorizontalOptions="Center">
-
+                            Spacing="5"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Center">
                             <CheckBox x:Name="HardCheck"
-                      IsChecked="False"
-                      Color="#FDA4AF"
-                      CheckedChanged="OnDifficultyChanged"
-                      HorizontalOptions="Center"/>
-
+                                      IsChecked="False"
+                                      Color="#FDA4AF"
+                                      CheckedChanged="OnDifficultyChanged"
+                                      HorizontalOptions="Center"/>
                             <Label Text="HARD"
-                   TextColor="#FFE1E5"
-                   FontSize="13"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#FFE1E5"
+                                   FontSize="13"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"/>
                             <Label Text="7 seconds"
-                   TextColor="#E7A8B4"
-                   FontSize="10"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#E7A8B4"
+                                   FontSize="10"
+                                   HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
 
                     <!-- ZEN -->
                     <Border Grid.Column="3"
-            HeightRequest="120"
-            BackgroundColor="#004D4D"
-            Stroke="#00ACC1"
-            StrokeThickness="1"
-            StrokeShape="RoundRectangle 16"
-            Padding="10">
-
+                            HeightRequest="120"
+                            BackgroundColor="#004D4D"
+                            Stroke="#00ACC1"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="10">
                         <VerticalStackLayout
-            Spacing="5"
-            VerticalOptions="Center"
-            HorizontalOptions="Center">
-
+                            Spacing="5"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Center">
                             <CheckBox x:Name="ZenCheck"
-                      IsChecked="False"
-                      Color="White"
-                      CheckedChanged="OnDifficultyChanged"
-                      HorizontalOptions="Center"/>
-
+                                      IsChecked="False"
+                                      Color="White"
+                                      CheckedChanged="OnDifficultyChanged"
+                                      HorizontalOptions="Center"/>
                             <Label Text="ZEN"
-                   TextColor="White"
-                   FontSize="13"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="White"
+                                   FontSize="13"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"/>
                             <Label Text="No Timer"
-                   TextColor="#DFFBFF"
-                   FontSize="10"
-                   HorizontalOptions="Center"/>
-
+                                   TextColor="#DFFBFF"
+                                   FontSize="10"
+                                   HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
-
                 </Grid>
-                <!-- Timer -->
-                <Border Margin="0,22,0,0" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="16">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" VerticalOptions="Center">
-                        <VerticalStackLayout Spacing="3">
-                            <Label x:Name="TimerTitleLabel" Text="Timer (0-100s, Default: 15s):" TextColor="#F8FAFC" FontAttributes="Bold" FontSize="14" />
-                            <Label Text="Set 0 seconds for a calm, untimed battle." TextColor="#8EA0C0" FontSize="11" />
-                        </VerticalStackLayout>
-                        <Border Grid.Column="1" WidthRequest="82" BackgroundColor="#1A2644" Stroke="#3D5378" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="3,0">
-                            <Entry x:Name="TimerEntry" Text="15" Keyboard="Numeric" TextColor="#F8FAFC" BackgroundColor="Transparent"
-                                   FontAttributes="Bold" FontSize="18" HorizontalTextAlignment="Center" TextChanged="OnTimerTextChanged" />
-                        </Border>
-                    </Grid>
-                </Border>
+
                 <!-- Deck source -->
                 <Label Margin="0,28,0,10" Text="QUESTION DECK" TextColor="#A9B6CF" FontSize="11" FontAttributes="Bold" />
                 <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="16">
                     <VerticalStackLayout Spacing="12">
                         <Label Text="Select the cards you want to battle with." TextColor="#A9B6CF" FontSize="13" />
-                        <Button x:Name="DeckDropdownButton" Text="CHOOSE A DECK  ▾" Clicked="ToggleDropdownLayout" HeightRequest="52"
+                        <Button x:Name="DeckDropdownButton" Text="CHOOSE A DECK   " Clicked="ToggleDropdownLayout" HeightRequest="52"
                                 BackgroundColor="#1A2644" TextColor="#E7EEFC" BorderColor="#3D5378" BorderWidth="1" FontAttributes="Bold" CornerRadius="14" />
                         <ScrollView x:Name="DropdownScrollContainer" HeightRequest="150" BackgroundColor="#0E1830" IsVisible="False">
                             <VerticalStackLayout x:Name="DropdownStackList" Padding="6" Spacing="4" />
@@ -207,12 +175,15 @@
                         </Grid>
                     </VerticalStackLayout>
                 </Border>
-                <Button x:Name="LaunchGameButton" Text="LAUNCH BATTLE  →" Clicked="OnFinalLaunchClicked" HeightRequest="60" Margin="0,26,0,0"
+
+                <Button x:Name="LaunchGameButton" Text="LAUNCH BATTLE   " Clicked="OnFinalLaunchClicked" HeightRequest="60" Margin="0,26,0,0"
                         BackgroundColor="#8B5CF6" TextColor="White" FontSize="16" FontAttributes="Bold" CornerRadius="17" />
+
                 <Label Text="A deck is required before you can enter the arena." Margin="0,12,0,0" TextColor="#71819F" FontSize="12"
                        HorizontalOptions="Center" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </ScrollView>
+
         <!-- Deck creation/import modal -->
         <Grid x:Name="SetupPopupOverlay" BackgroundColor="#C9000718" IsVisible="False">
             <Grid.GestureRecognizers>
@@ -223,5 +194,4 @@
             </Border>
         </Grid>
     </Grid>
-
 </ContentPage>

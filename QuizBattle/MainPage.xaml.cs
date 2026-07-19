@@ -242,6 +242,33 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async Task HandleNonHardVictoryAsync()
+    {
+        AnswerEntry.IsEnabled = false;
+        foreach (Button button in optionButtons)
+        {
+            button.IsEnabled = false;
+        }
+
+        battleTimer?.Stop();
+
+        bool retry = await DisplayAlert(
+            "YOU WIN!",
+            "YOU CLEARED THE DECK!\n\nScores and Leaderboard submissions are only tracked on HARD difficulty. Step up to Hard mode to test your true skills!\n\nPLAY AGAIN?",
+            "RETRY",
+            "MAIN MENU"
+        );
+
+        if (retry)
+        {
+            await StartBattle();
+        }
+        else
+        {
+            await Shell.Current.GoToAsync("//MainMenu");
+        }
+    }
+
     private void UpdateLabels()
     {
         if (GameSettings.IsZenMode || bossHP < 0)
@@ -324,18 +351,25 @@ public partial class MainPage : ContentPage
             battleTimer?.Stop();
             quizTimer.Stop();
 
-            int preBonusTotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
-            if (preBonusTotal < 0) preBonusTotal = 0;
+            if (GameSettings.CurrentDifficulty == "Hard")
+            {
+                int preBonusTotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
+                if (preBonusTotal < 0) preBonusTotal = 0;
 
-            double totalSecondsSpent = quizTimer.Elapsed.TotalSeconds;
-            if (totalSecondsSpent > totalMaxTimeAllowed) totalSecondsSpent = totalMaxTimeAllowed;
+                double totalSecondsSpent = quizTimer.Elapsed.TotalSeconds;
+                if (totalSecondsSpent > totalMaxTimeAllowed) totalSecondsSpent = totalMaxTimeAllowed;
 
-            double secondsSaved = totalMaxTimeAllowed - totalSecondsSpent;
-            double timeSavedRatio = totalMaxTimeAllowed > 0 ? (secondsSaved / totalMaxTimeAllowed) : 0;
-            int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
+                double secondsSaved = totalMaxTimeAllowed - totalSecondsSpent;
+                double timeSavedRatio = totalMaxTimeAllowed > 0 ? (secondsSaved / totalMaxTimeAllowed) : 0;
+                int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
 
-            baseQuestionsScore += bonusPoints;
-            _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
+                baseQuestionsScore += bonusPoints;
+                _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
+            }
+            else
+            {
+                _ = HandleNonHardVictoryAsync();
+            }
             return;
         }
 

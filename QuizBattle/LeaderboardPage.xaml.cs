@@ -39,7 +39,14 @@ public partial class LeaderboardPage : ContentPage
 
         try
         {
-            var topScores = await _firestoreService.GetLeaderboardAsync(selectedDeck.Uid);
+            // ROUTING FIX: Pull session data and pass validation credentials downstream safely
+            string userToken = "";
+            if (QuizBattle.Helpers.SessionManager.IsLoggedIn())
+            {
+                userToken = QuizBattle.Helpers.SessionManager.GetUser().IdToken;
+            }
+
+            var topScores = await _firestoreService.GetLeaderboardAsync(selectedDeck.Uid, userToken);
             LeaderboardStack.Children.Clear();
 
             if (topScores.Count == 0)

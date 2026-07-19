@@ -54,13 +54,22 @@ public class FirestoreService
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", idToken);
 
         string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents/leaderboards/{Uri.EscapeDataString(deckUid)}_{localId}";
+
+        // Using deckUid as the property field key name perfectly
         var body = new { fields = new { localId = new { stringValue = localId }, displayName = new { stringValue = displayName }, deckUid = new { stringValue = deckUid }, score = new { integerValue = score.ToString() } } };
-        await client.PatchAsJsonAsync(url, body);
+
+        var uploadResponse = await client.PatchAsJsonAsync(url, body);
+        if (!uploadResponse.IsSuccessStatusCode)
+        {
+            string errorPayload = await uploadResponse.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"[Leaderboard Upload Rejection]: {uploadResponse.StatusCode} - {errorPayload}");
+            return;
+        }
 
         List<string> documentPathsToDelete = new List<string>();
         string queryUrl = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
 
-        // Dropped remote orderBy to avoid composite index requirements
+        // No orderBy here -> Bypasses the Index requirement completely!
         var queryBody = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckUid" }, op = "EQUAL", value = new { stringValue = deckUid } } } } };
 
         HttpResponseMessage response = await client.PostAsJsonAsync(queryUrl, queryBody);
@@ -78,8 +87,8 @@ public class FirestoreService
                     {
                         if (scoreProp.TryGetProperty("integerValue", out var iv))
                             rawScore = iv.GetString() ?? "0";
-                        else if (scoreProp.ValueKind == JsonValueKind.Number)
-                            rawScore = scoreProp.ToString();
+                        else if (scoreProp.TryGetProperty("doubleValue", out var dv))
+                            rawScore = dv.ValueKind == JsonValueKind.Number ? dv.GetRawText() : (dv.GetString() ?? "0");
                     }
 
                     if (doc.TryGetProperty("name", out JsonElement nameProp))
@@ -89,7 +98,7 @@ public class FirestoreService
                 }
             }
 
-            // Client-side execution tracking: Sort metrics internally
+            // Clean up old entries over client-side memory definitions
             var losers = temporaryList.OrderByDescending(x => x.Score).Skip(10).ToList();
             foreach (var loser in losers)
             {
@@ -107,12 +116,12 @@ public class FirestoreService
         }
     }
 
-    public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(string deckUid)
+    public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(string deckUid, string idToken)
     {
         using HttpClient client = new HttpClient();
-        string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", idToken);
 
-        // Dropped server-side orderBy to make sure the data loading runs successfully without index issues
+        string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
         var body = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckUid" }, op = "EQUAL", value = new { stringValue = deckUid } } } } };
         HttpResponseMessage response = await client.PostAsJsonAsync(url, body);
         var results = new List<LeaderboardEntry>();
@@ -129,8 +138,8 @@ public class FirestoreService
                 {
                     if (scoreProp.TryGetProperty("integerValue", out var iv))
                         rawScore = iv.GetString() ?? "0";
-                    else if (scoreProp.ValueKind == JsonValueKind.Number)
-                        rawScore = scoreProp.ToString();
+                    else if (scoreProp.TryGetProperty("doubleValue", out var dv))
+                        rawScore = dv.ValueKind == JsonValueKind.Number ? dv.GetRawText() : (dv.GetString() ?? "0");
                 }
 
                 results.Add(new LeaderboardEntry
@@ -141,7 +150,7 @@ public class FirestoreService
             }
         }
 
-        // FIX: Re-apply ordering logic securely over local memory space
+        // Sort rows descending client-side
         return results.OrderByDescending(r => r.Score).Take(10).ToList();
     }
 
