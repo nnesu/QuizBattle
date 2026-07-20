@@ -19,11 +19,23 @@ public partial class DecksPage : ContentPage
     private async void LoadDecks()
     {
         DecksGrid.Children.Clear();
+        DecksGrid.RowDefinitions.Clear();
+
         var decks = await _dbService.GetDecksAsync();
-        int row = 0, col = 0;
+
+        int row = 0;
+        int col = 0;
 
         foreach (var deck in decks)
         {
+            if (DecksGrid.RowDefinitions.Count <= row)
+            {
+                DecksGrid.RowDefinitions.Add(
+                    new RowDefinition
+                    {
+                        Height = GridLength.Auto
+                    });
+            }
             // Main item block container layout cell
             var cellContainer = new VerticalStackLayout
             {
@@ -79,9 +91,7 @@ public partial class DecksPage : ContentPage
             cellContainer.Children.Add(tagsLayout);
 
             // Route the cell item element out to the primary UI dashboard collection grid slots
-            Grid.SetRow(cellContainer, row);
-            Grid.SetColumn(cellContainer, col);
-            DecksGrid.Children.Add(cellContainer);
+            DecksGrid.Add(cellContainer, col, row);
 
             col++;
             if (col > 1)
@@ -238,7 +248,20 @@ public partial class DecksPage : ContentPage
         ShowPopup(layout);
     }
 
-    public async void OnAddNewDeckClicked(object? sender, EventArgs e) { await _dbService.CreateDeckAsync(await DisplayPromptAsync("NEW DECK", "Name:")); LoadDecks(); }
+    public async void OnAddNewDeckClicked(object? sender, EventArgs e)
+    {
+        string? deckName =
+            await DisplayPromptAsync(
+                "NEW DECK",
+                "Name:");
+
+        if (string.IsNullOrWhiteSpace(deckName))
+            return;
+
+        await _dbService.CreateDeckAsync(deckName);
+
+        LoadDecks();
+    }
 
     private async void OnRenameDeckClicked(object? sender, EventArgs e)
     {

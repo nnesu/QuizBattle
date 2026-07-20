@@ -1,4 +1,3 @@
-using QuizBattle.Helpers;
 using QuizBattle.Models;
 using QuizBattle.Services;
 
@@ -15,7 +14,7 @@ public partial class SignUpPage : ContentPage
     {
         string email = EmailEntry.Text?.Trim() ?? string.Empty;
         string password = PasswordEntry.Text ?? string.Empty;
-        string confirmPassword = ConfirmPasswordEntry.Text ?? string.Empty; // New reference
+        string confirmPassword = ConfirmPasswordEntry.Text ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -35,7 +34,6 @@ public partial class SignUpPage : ContentPage
             return;
         }
 
-        // NEW VALIDATION: Check if confirmation matches
         if (password != confirmPassword)
         {
             await DisplayAlert("Error", "Passwords do not match. Please verify both fields.", "OK");
@@ -47,7 +45,6 @@ public partial class SignUpPage : ContentPage
         try
         {
             User? user = await service.SignUp(email, password);
-
             if (user == null)
             {
                 await DisplayAlert("Sign Up Failed", "Could not create user account profile.", "OK");
@@ -56,14 +53,9 @@ public partial class SignUpPage : ContentPage
 
             FirestoreService firestore = new FirestoreService();
             await firestore.CreateUserProfile(user);
-
             await service.SendVerificationEmail(user.IdToken);
 
-            await DisplayAlert(
-                "Verify Email",
-                "A verification email has been sent. Please verify your email before logging in.",
-                "OK");
-
+            await DisplayAlert("Verify Email", "A verification email has been sent. Please verify your email before logging in.", "OK");
             await Navigation.PopAsync();
         }
         catch (Exception ex)
@@ -77,16 +69,15 @@ public partial class SignUpPage : ContentPage
         await Navigation.PopAsync();
     }
 
-    // Password Eye Toggles
     private void TogglePassword_Clicked(object sender, EventArgs e)
     {
         PasswordEntry.IsPassword = !PasswordEntry.IsPassword;
-        TogglePasswordBtn.Text = PasswordEntry.IsPassword ? "👁️" : "🙈";
+        TogglePasswordBtn.Text = PasswordEntry.IsPassword ? "◉" : "◌";
     }
 
     private void ToggleConfirmPassword_Clicked(object sender, EventArgs e)
     {
         ConfirmPasswordEntry.IsPassword = !ConfirmPasswordEntry.IsPassword;
-        ToggleConfirmPasswordBtn.Text = ConfirmPasswordEntry.IsPassword ? "👁️" : "🙈";
+        ToggleConfirmPasswordBtn.Text = ConfirmPasswordEntry.IsPassword ? "◉" : "◌";
     }
 }
