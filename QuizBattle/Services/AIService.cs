@@ -6,7 +6,7 @@ namespace QuizBattle.Services
     public class AIService
     {
         private static readonly HttpClient httpClient = new HttpClient();
-        private const string ApiKey = "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";
+        private const string ApiKey = "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";
         private const string ApiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
         // generate questions with groq ai
