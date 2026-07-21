@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizBattle.OnboardingPage"
+             Title="Tutorial"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#0A1020">
+    <Grid Padding="24,22,24,20" RowDefinitions="Auto,*,Auto" BackgroundColor="#0A1020">
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0A1020" Offset="0" />
+                <GradientStop Color="#12113A" Offset="0.58" />
+                <GradientStop Color="#0B1B35" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+            <Button Text=" " Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0"
+                    FontSize="30" FontAttributes="None" BackgroundColor="#17223E" TextColor="#D5DDF2"
+                    BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+            <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" Spacing="1">
+                <Label Text="TUTORIAL" TextColor="#F8FAFC" FontSize="20" FontAttributes="Bold" />
+                <Label x:Name="StepIndicatorLabel" Text="STEP 1 OF 6" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- Content Carousel -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout VerticalOptions="Center" Spacing="0" MaximumWidthRequest="560" Margin="0,24,0,0">
+
+                <!-- Step 1: Welcome -->
+                <VerticalStackLayout x:Name="Step1" Spacing="16">
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="WELCOME TO QUIZ BATTLE" TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                            <Label Text="Master your subjects, battle your knowledge, and climb the ranks. Let's get you started!" TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="#161F38" Stroke="#2C3A5C" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="14">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="WHAT YOU'LL LEARN" TextColor="#8EA0C0" FontSize="11" FontAttributes="Bold" />
+                            <Label Text="- How to navigate the main menu" TextColor="#F8FAFC" FontSize="13" LineHeight="1.4" />
+                            <Label Text="- Creating and managing study decks" TextColor="#F8FAFC" FontSize="13" LineHeight="1.4" />
+                            <Label Text="- Starting a quiz battle" TextColor="#F8FAFC" FontSize="13" LineHeight="1.4" />
+                            <Label Text="- Understanding difficulty levels" TextColor="#F8FAFC" FontSize="13" LineHeight="1.4" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Step 2: Main Menu Navigation -->
+                <VerticalStackLayout x:Name="Step2" Spacing="16" IsVisible="False">
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="6">
+                        <Image Source="step2_mainmenu.png" Aspect="AspectFit" HeightRequest="220" />
+                    </Border>
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="NAVIGATING THE MAIN MENU" TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                            <Label Text="The main menu is your hub. Each button leads to a different feature." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                        </VerticalStackLayout>
+                    </Border>
+                   
+                </VerticalStackLayout>
+
+                <!-- Step 3: Creating Decks -->
+                <VerticalStackLayout x:Name="Step3" Spacing="16" IsVisible="False">
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="6">
+                        <Image Source="step3_creatingdeck.png" Aspect="AspectFit" HeightRequest="220" />
+                    </Border>
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="CREATING YOUR FIRST DECK" TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                            <Label Text="Decks are collections of questions you want to study. Build them to master any subject." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="#161F38" Stroke="#2C3A5C" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="HOW TO CREATE A DECK" TextColor="#8B5CF6" FontSize="12" FontAttributes="Bold" />
+                                <Label Text="1. Go to MY DECKS" TextColor="#A9B6CF" FontSize="12" />
+                                <Label Text="2. Tap CREATE DECK button" TextColor="#A9B6CF" FontSize="12" />
+                                <Label Text="3. Enter a deck name" TextColor="#A9B6CF" FontSize="12" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="ADDING QUESTIONS" TextColor="#5EEAD4" FontSize="12" FontAttributes="Bold" />
+                                <Label Text="Once created, you can add questions by:" TextColor="#A9B6CF" FontSize="12" />
+                                <Label Text="- CREATE: Manually type each question" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="- GENERATE: AI generates questions from text" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="- IMPORT: Upload questions from a file" TextColor="#A9B6CF" FontSize="11" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Step 4: Quiz Screen -->
+                <VerticalStackLayout x:Name="Step4" Spacing="16" IsVisible="False">
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="6">
+                        <Image Source="step4_quiz.png" Aspect="AspectFit" HeightRequest="220" />
+                    </Border>
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="THE QUIZ SCREEN" TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                            <Label Text="Here's what you'll see before the battle, and the different difficulties you will face." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                        </VerticalStackLayout>
+                    </Border>
+                    
+                </VerticalStackLayout>
+
+                <!-- Step 5: How Quiz Works (Difficulty & Scoring) -->
+                <VerticalStackLayout x:Name="Step5" Spacing="16" IsVisible="False">
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="6">
+                        <Image Source="step5_howquizwork.png" Aspect="AspectFit" HeightRequest="220" />
+                    </Border>
+
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="HOW THE QUIZ WORKS" TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                            <Label Text="Understand difficulty levels and scoring to conquer your challenges." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="#161F38" Stroke="#2C3A5C" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="MASTERY/PROGRESS" TextColor="#8B5CF6" FontSize="12" FontAttributes="Bold" />
+                                <Label Text="EASY - 1 per question" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="NORMAL - 2 per question" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="HARD - 3 per question" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="ZEN - 0 per question" TextColor="#A9B6CF" FontSize="11" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="SCORING" TextColor="#5EEAD4" FontSize="12" FontAttributes="Bold" />
+                                <Label Text="Earn points for correct answers and this is exclusively for leaderboards ranking (and hard difficulty)." TextColor="#A9B6CF" FontSize="11" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Step 6: Ready to Battle -->
+                <VerticalStackLayout x:Name="Step6" Spacing="16" IsVisible="False">
+                    <Border BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="CONCLUSION" TextColor="#F8FAFC" FontSize="28" FontAttributes="Bold" LineHeight="1.08" />
+                            <Label Text="Now it's time to create your first deck and dive into your first battle." TextColor="#A9B6CF" FontSize="14" LineHeight="1.35" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="#161F38" Stroke="#2C3A5C" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="SUMMARY" TextColor="#8B5CF6" FontSize="12" FontAttributes="Bold" />
+                                <Label Text="1. Head to MY DECKS and create your first deck" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="2. Add questions using any method (CREATE, GENERATE, IMPORT)" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="3. Return to main menu and START A BATTLE" TextColor="#A9B6CF" FontSize="11" />
+                                <Label Text="4. Select your difficulty and deck, then begin!" TextColor="#A9B6CF" FontSize="11" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Navigation Controls -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,24,0,0">
+            <Button x:Name="SkipButton" Grid.Column="0" Text="SKIP" Clicked="OnSkipClicked" HeightRequest="54"
+                    BackgroundColor="#18213C" TextColor="#E2E8F0" FontSize="14" FontAttributes="Bold"
+                    BorderColor="#31405F" BorderWidth="1" CornerRadius="14" />
+            <Button x:Name="NextButton" Grid.Column="1" Text="NEXT" Clicked="OnNextClicked" HeightRequest="54"
+                    BackgroundColor="#8B5CF6" TextColor="White" FontSize="14" FontAttributes="Bold" CornerRadius="14" />
+        </Grid>
+
+        <!-- Progress Indicator -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,*,*" ColumnSpacing="6" Margin="0,12,0,0" IsVisible="False">
+            <BoxView x:Name="Progress1" Grid.Column="0" CornerRadius="4" BackgroundColor="#8B5CF6" HeightRequest="6" />
+            <BoxView x:Name="Progress2" Grid.Column="1" CornerRadius="4" BackgroundColor="#31405F" HeightRequest="6" />
+            <BoxView x:Name="Progress3" Grid.Column="2" CornerRadius="4" BackgroundColor="#31405F" HeightRequest="6" />
+            <BoxView x:Name="Progress4" Grid.Column="3" CornerRadius="4" BackgroundColor="#31405F" HeightRequest="6" />
+            <BoxView x:Name="Progress5" Grid.Column="4" CornerRadius="4" BackgroundColor="#31405F" HeightRequest="6" />
+            <BoxView x:Name="Progress6" Grid.Column="5" CornerRadius="4" BackgroundColor="#31405F" HeightRequest="6" />
+        </Grid>
+    </Grid>
+</ContentPage>
