@@ -29,6 +29,7 @@ public partial class LeaderboardPage : ContentPage
     private async void OnDeckSelected(object sender, EventArgs e)
     {
         if (DeckPicker.SelectedIndex == -1) return;
+        await AudioService.PlayButtonClickAsync();
         var selectedDeck = _availableDecks[DeckPicker.SelectedIndex];
 
         var localMastery = await _dbService.GetDeckMasteryAsync(selectedDeck.Id);
@@ -94,6 +95,7 @@ public partial class LeaderboardPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         await Navigation.PopAsync();
     }
 }
