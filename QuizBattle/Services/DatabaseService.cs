@@ -45,6 +45,10 @@ namespace QuizBattle.Services
         public async Task<DeckEntity> CreateDeckAsync(string name, bool isReadOnly = false, string? customUid = null)
         {
             await InitAsync();
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Deck name cannot be empty.");
+
             string cleanName = name.Trim();
 
             var newDeck = new DeckEntity

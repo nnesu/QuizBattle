@@ -1,42 +1,55 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="QuizBattle.LoginPage">
-
-    <VerticalStackLayout
-        Padding="30"
-        Spacing="15">
-
-        <Entry
-            x:Name="EmailEntry"
-            Placeholder="Email" />
-
-        <!-- Password entry wrapper -->
-        <Grid ColumnDefinitions="*, Auto">
-            <Entry
-                Grid.Column="0"
-                x:Name="PasswordEntry"
-                Placeholder="Password"
-                IsPassword="True" />
-            <Button
-                Grid.Column="1"
-                x:Name="TogglePasswordBtn"
-                Text="👁️"
-                WidthRequest="45"
-                Padding="0"
-                BackgroundColor="Transparent"
-                TextColor="Gray"
-                Clicked="TogglePassword_Clicked" />
-        </Grid>
-
-        <Button
-            Text="Login"
-            Clicked="Login_Clicked" />
-
-        <Button
-            Text="Don't have an account?"
-            Clicked="SignUp_Clicked" />
-
-    </VerticalStackLayout>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuizBattle.LoginPage"
+             Title="Welcome back"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#091121">
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#091121" Offset="0" />
+                <GradientStop Color="#101837" Offset="0.55" />
+                <GradientStop Color="#0A2133" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+        <ScrollView>
+            <VerticalStackLayout Padding="28,34,28,28" Spacing="0" MaximumWidthRequest="460" VerticalOptions="Center">
+                <Border WidthRequest="58" HeightRequest="58" BackgroundColor="#8B5CF6" StrokeThickness="0" StrokeShape="RoundRectangle 18" HorizontalOptions="Start">
+                    <Label Text="QB" TextColor="White" FontSize="19" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Text="Welcome&#10;back, challenger." Margin="0,28,0,0" TextColor="#F8FAFC" FontSize="34" FontAttributes="Bold" LineHeight="1.06" />
+                <Label Text="Sign in to continue building your knowledge arsenal." Margin="0,12,0,0" TextColor="#A9B6CF" FontSize="15" LineHeight="1.4" />
+                <Border Margin="0,30,0,0" BackgroundColor="#121D37" Stroke="#2A3C60" StrokeThickness="1" StrokeShape="RoundRectangle 22" Padding="20">
+                    <VerticalStackLayout Spacing="0">
+                        <Label Text="EMAIL ADDRESS" TextColor="#8EA0C0" FontSize="11" FontAttributes="Bold" />
+                        <Border Margin="0,8,0,18" BackgroundColor="#172542" Stroke="#304B70" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="5,0">
+                            <Entry x:Name="EmailEntry" Placeholder="you@example.com" Keyboard="Email" TextColor="#F8FAFC"
+                                   PlaceholderColor="#7889A8" BackgroundColor="Transparent" FontSize="16" />
+                        </Border>
+                        <Label Text="PASSWORD" TextColor="#8EA0C0" FontSize="11" FontAttributes="Bold" />
+                        <Border Margin="0,8,0,22" BackgroundColor="#172542" Stroke="#304B70" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="5,0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Entry Grid.Column="0" x:Name="PasswordEntry" Placeholder="Enter your password" IsPassword="True"
+                                       TextColor="#F8FAFC" PlaceholderColor="#7889A8" BackgroundColor="Transparent" FontSize="16" />
+                                <Button Grid.Column="1" x:Name="TogglePasswordBtn" Text="◉" WidthRequest="44" HeightRequest="44" Padding="0"
+                                        BackgroundColor="Transparent" TextColor="#A78BFA" FontSize="18" Clicked="TogglePassword_Clicked" />
+                            </Grid>
+                        </Border>
+                        <Button Text="ENTER THE ARENA  →" Clicked="Login_Clicked" HeightRequest="56" BackgroundColor="#8B5CF6"
+                                TextColor="White" FontSize="16" FontAttributes="Bold" CornerRadius="16" />
+                    </VerticalStackLayout>
+                </Border>
+                <Grid Margin="0,24,0,20" ColumnDefinitions="*,Auto,*" ColumnSpacing="12" VerticalOptions="Center">
+                    <BoxView Grid.Column="0" HeightRequest="1" Color="#2A3C60" />
+                    <Label Grid.Column="1" Text="NEW HERE?" TextColor="#71819F" FontSize="11" FontAttributes="Bold" />
+                    <BoxView Grid.Column="2" HeightRequest="1" Color="#2A3C60" />
+                </Grid>
+                <Button Text="CREATE AN ACCOUNT" Clicked="SignUp_Clicked" HeightRequest="52" BackgroundColor="#172542"
+                        TextColor="#DDD6FE" BorderColor="#6254AF" BorderWidth="1" FontAttributes="Bold" CornerRadius="16" />
+                <Label Text="Your progress and decks stay safely synced to your account." Margin="0,18,0,0" TextColor="#71819F"
+                       FontSize="12" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>

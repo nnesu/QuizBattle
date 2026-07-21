@@ -24,7 +24,12 @@ public class FirestoreService
         HttpResponseMessage response = await client.GetAsync(url);
         JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement fields = document.RootElement.GetProperty("fields");
-        return new User { Email = fields.GetProperty("email").GetProperty("stringValue").GetString() ?? "", DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? "No Name", LocalId = localId };
+        return new User { Email = fields.GetProperty("email").GetProperty("stringValue").GetString() ?? "", DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? "No Name",
+            PhotoUrl =
+            fields.TryGetProperty("photoUrl", out JsonElement photo)
+                ? photo.GetProperty("stringValue").GetString() ?? ""
+                : "",
+            LocalId = localId };
     }
 
     public async Task UpdateDisplayName(string localId, string displayName)
@@ -51,12 +56,8 @@ public class FirestoreService
     public async Task SubmitLeaderboardScore(string localId, string displayName, string deckUid, int score, string idToken)
     {
         using HttpClient client = new HttpClient();
-
         string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents/leaderboards/{Uri.EscapeDataString(deckUid)}_{localId}";
-
-        // Payload configured to use clean deckUid keys natively
         var body = new { fields = new { localId = new { stringValue = localId }, displayName = new { stringValue = displayName }, deckUid = new { stringValue = deckUid }, score = new { integerValue = score.ToString() } } };
-
         var uploadResponse = await client.PatchAsJsonAsync(url, body);
         if (!uploadResponse.IsSuccessStatusCode)
         {
@@ -68,13 +69,11 @@ public class FirestoreService
         List<string> documentPathsToDelete = new List<string>();
         string queryUrl = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
         var queryBody = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckUid" }, op = "EQUAL", value = new { stringValue = deckUid } } } } };
-
         HttpResponseMessage response = await client.PostAsJsonAsync(queryUrl, queryBody);
         if (response.IsSuccessStatusCode)
         {
             using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var temporaryList = new List<(string Path, int Score)>();
-
             foreach (JsonElement element in document.RootElement.EnumerateArray())
             {
                 if (element.TryGetProperty("document", out JsonElement doc) && doc.TryGetProperty("fields", out JsonElement fields))
@@ -87,14 +86,12 @@ public class FirestoreService
                         else if (scoreProp.TryGetProperty("doubleValue", out var dv))
                             rawScore = dv.ValueKind == JsonValueKind.Number ? dv.GetRawText() : (dv.GetString() ?? "0");
                     }
-
                     if (doc.TryGetProperty("name", out JsonElement nameProp))
                     {
                         temporaryList.Add((nameProp.GetString() ?? "", int.Parse(rawScore)));
                     }
                 }
             }
-
             var losers = temporaryList.OrderByDescending(x => x.Score).Skip(10).ToList();
             foreach (var loser in losers)
             {
@@ -115,14 +112,11 @@ public class FirestoreService
     public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(string deckUid, string idToken)
     {
         using HttpClient client = new HttpClient();
-
         string url = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents:runQuery";
         var body = new { structuredQuery = new { from = new[] { new { collectionId = "leaderboards" } }, where = new { fieldFilter = new { field = new { fieldPath = "deckUid" }, op = "EQUAL", value = new { stringValue = deckUid } } } } };
         HttpResponseMessage response = await client.PostAsJsonAsync(url, body);
         var results = new List<LeaderboardEntry>();
-
         if (!response.IsSuccessStatusCode) return results;
-
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         foreach (JsonElement element in document.RootElement.EnumerateArray())
         {
@@ -137,14 +131,22 @@ public class FirestoreService
                         rawScore = dv.ValueKind == JsonValueKind.Number ? dv.GetRawText() : (dv.GetString() ?? "0");
                 }
 
+                string localIdVal = fields.TryGetProperty("localId", out var li) ? li.GetProperty("stringValue").GetString() ?? "" : "";
+
+                // Construct direct Cloudinary URL from user's localId
+                string photoUrlVal = !string.IsNullOrWhiteSpace(localIdVal)
+                    ? $"https://res.cloudinary.com/j3fal3hz/image/upload/profiles/{localIdVal}.jpg"
+                    : "avatar1.png";
+
                 results.Add(new LeaderboardEntry
                 {
+                    LocalId = localIdVal,
                     DisplayName = fields.TryGetProperty("displayName", out var dn) ? dn.GetProperty("stringValue").GetString() ?? "Anonymous" : "Anonymous",
-                    Score = int.Parse(rawScore)
+                    Score = int.Parse(rawScore),
+                    PhotoUrl = photoUrlVal
                 });
             }
         }
-
         return results.OrderByDescending(r => r.Score).Take(10).ToList();
     }
 
@@ -157,7 +159,6 @@ public class FirestoreService
         HttpResponseMessage response = await client.PostAsJsonAsync(url, body);
         var decks = new List<DeckEntity>();
         if (!response.IsSuccessStatusCode) return decks;
-
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         foreach (JsonElement element in document.RootElement.EnumerateArray())
         {
@@ -165,7 +166,6 @@ public class FirestoreService
             {
                 string fullPathName = doc.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";
                 string parsedCloudUid = Path.GetFileName(fullPathName);
-
                 decks.Add(new DeckEntity
                 {
                     Name = fields.TryGetProperty("deckName", out var n) ? n.GetProperty("stringValue").GetString() ?? "" : "",

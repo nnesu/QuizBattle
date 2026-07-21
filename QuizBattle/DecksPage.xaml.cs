@@ -28,7 +28,9 @@ public partial class DecksPage : ContentPage
         DecksGrid.RowDefinitions.Clear(); // Reset grid row definitions
 
         var decks = await _dbService.GetDecksAsync();
-        int row = 0, col = 0;
+
+        int row = 0;
+        int col = 0;
 
         foreach (var deck in decks)
         {
@@ -96,9 +98,7 @@ public partial class DecksPage : ContentPage
             cellContainer.Children.Add(tagsLayout);
 
             // Route the cell item element out to the primary UI dashboard collection grid slots
-            Grid.SetRow(cellContainer, row);
-            Grid.SetColumn(cellContainer, col);
-            DecksGrid.Children.Add(cellContainer);
+            DecksGrid.Add(cellContainer, col, row);
 
             col++;
             if (col > 1)
