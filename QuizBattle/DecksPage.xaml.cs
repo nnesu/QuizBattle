@@ -13,17 +13,31 @@ public partial class DecksPage : ContentPage
     public DecksPage()
     {
         InitializeComponent();
+    }
+
+    // Automatically refreshes the deck list whenever returning to this screen
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
         LoadDecks();
     }
 
     private async void LoadDecks()
     {
         DecksGrid.Children.Clear();
+        DecksGrid.RowDefinitions.Clear(); // Reset grid row definitions
+
         var decks = await _dbService.GetDecksAsync();
         int row = 0, col = 0;
 
         foreach (var deck in decks)
         {
+            // Dynamically define a new row height when starting Column 0
+            if (col == 0)
+            {
+                DecksGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            }
+
             // Main item block container layout cell
             var cellContainer = new VerticalStackLayout
             {
@@ -68,7 +82,7 @@ public partial class DecksPage : ContentPage
                 var beatenTag = new Label
                 {
                     Text = "⚔️ BEATEN",
-                    TextColor = Color.FromArgb("#5EEAD4"), // Neon theme accent contrast text color color map
+                    TextColor = Color.FromArgb("#5EEAD4"), // Neon teal accent contrast
                     FontSize = 11,
                     FontAttributes = FontAttributes.Bold
                 };
@@ -103,7 +117,13 @@ public partial class DecksPage : ContentPage
         LoadCards();
     }
 
-    private void CloseCardsView(object? sender, EventArgs e) { CardsView.IsVisible = false; DecksView.IsVisible = true; LoadDecks(); }
+    private void CloseCardsView(object? sender, EventArgs e)
+    {
+        CardsView.IsVisible = false;
+        DecksView.IsVisible = true;
+        LoadDecks();
+    }
+
     private async void OnBackClicked(object? sender, EventArgs e) => await Navigation.PopAsync();
     private async void OnSearchGlobalClicked(object sender, EventArgs e) { await Navigation.PushAsync(new SearchDecksPage()); }
 
@@ -121,15 +141,39 @@ public partial class DecksPage : ContentPage
     private async void LoadCards()
     {
         CardsGrid.Children.Clear();
+        CardsGrid.RowDefinitions.Clear(); // FIX: Clear existing row definitions so overflow cards render
+
         var questions = await _dbService.GetQuestionsForDeckAsync(_currentDeck!.Id);
         int row = 0, col = 0;
+
         foreach (var q in questions)
         {
-            var cardBtn = new Button { Text = q.Text, HeightRequest = 90, BackgroundColor = Color.FromArgb("#152440"), TextColor = Colors.White, CornerRadius = 16 };
+            // FIX: Dynamically add a row definition whenever a new grid row starts
+            if (col == 0)
+            {
+                CardsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            }
+
+            var cardBtn = new Button
+            {
+                Text = q.Text,
+                HeightRequest = 90,
+                BackgroundColor = Color.FromArgb("#152440"),
+                TextColor = Colors.White,
+                CornerRadius = 16
+            };
             cardBtn.Clicked += (s, e) => OpenEditCardPopup(q);
-            Grid.SetRow(cardBtn, row); Grid.SetColumn(cardBtn, col);
+
+            Grid.SetRow(cardBtn, row);
+            Grid.SetColumn(cardBtn, col);
             CardsGrid.Children.Add(cardBtn);
-            col++; if (col > 1) { col = 0; row++; }
+
+            col++;
+            if (col > 1)
+            {
+                col = 0;
+                row++;
+            }
         }
     }
 
@@ -238,7 +282,11 @@ public partial class DecksPage : ContentPage
         ShowPopup(layout);
     }
 
-    public async void OnAddNewDeckClicked(object? sender, EventArgs e) { await _dbService.CreateDeckAsync(await DisplayPromptAsync("NEW DECK", "Name:")); LoadDecks(); }
+    public async void OnAddNewDeckClicked(object? sender, EventArgs e)
+    {
+        await _dbService.CreateDeckAsync(await DisplayPromptAsync("NEW DECK", "Name:"));
+        LoadDecks();
+    }
 
     private async void OnRenameDeckClicked(object? sender, EventArgs e)
     {
@@ -247,7 +295,12 @@ public partial class DecksPage : ContentPage
         DeckTitleLabel.Text = _currentDeck.Name.ToUpper();
     }
 
-    private async void OnDeleteDeckClicked(object? sender, EventArgs e) { await _dbService.DeleteDeckAsync(_currentDeck!.Id); CloseCardsView(null, null!); }
+    private async void OnDeleteDeckClicked(object? sender, EventArgs e)
+    {
+        await _dbService.DeleteDeckAsync(_currentDeck!.Id);
+        CloseCardsView(null, null!);
+    }
+
     private void DismissActivePopup(object? sender, EventArgs e) => PopupBackground.IsVisible = false;
     private void ShowPopup(View view) { PopupContentStack.Children.Clear(); PopupContentStack.Children.Add(view); PopupBackground.IsVisible = true; }
 }
