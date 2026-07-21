@@ -87,4 +87,9 @@ public partial class MainMenu : ContentPage
         AudioService.Instance.StopBgm();
         Application.Current?.Quit();
     }
+
+    private async void OnTutorialClicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new OnboardingPage());
+    }
 }
