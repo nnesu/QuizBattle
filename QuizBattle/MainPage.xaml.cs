@@ -1,6 +1,5 @@
 using QuizBattle.Models;
 using QuizBattle.Services;
-using Plugin.Maui.Audio;
 using System.Linq;
 
 namespace QuizBattle;
@@ -10,19 +9,19 @@ public partial class MainPage : ContentPage
     private readonly Random random = new();
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
-    private Boss boss;
     private double bossHP;
     private double damagePerCorrectAnswer;
     private int playerLives;
     private int startingLives;
-    private int totalDeckCardsCount = 0; // Stores initial card count for display
+    private int totalDeckCardsCount = 0;
 
-    // Trackers for score structure
+    // Score tracking
     private int baseQuestionsScore = 0;
     private int totalStreakBonusEarned = 0;
     private int totalPenaltiesDeducted = 0;
     private int currentStreak = 0;
 
+    // Timer tracking
     private System.Diagnostics.Stopwatch quizTimer = new();
     private int totalMaxTimeAllowed = 0;
 
@@ -33,7 +32,6 @@ public partial class MainPage : ContentPage
 
     private IDispatcherTimer? battleTimer;
     private int timeRemaining;
-    private int questionTimeLimit;
 
     private double heartSize = 28;
     private readonly double heartMinSize = 18;
@@ -41,16 +39,9 @@ public partial class MainPage : ContentPage
     private readonly double heartSpacing = 4;
     private bool heartSizeLocked = false;
 
-    private bool isProcessingAnswer = false;
-
-    private readonly IAudioManager audioManager;
-    private IAudioPlayer? tickPlayer;
-
     public MainPage()
     {
         InitializeComponent();
-        audioManager = AudioManager.Current;
-
         optionButtons = new Button[]
         {
             OptionButton1,
@@ -59,69 +50,6 @@ public partial class MainPage : ContentPage
             OptionButton4
         };
         LivesLayout.SizeChanged += LivesLayout_SizeChanged;
-    }
-
-    // Starts game BGM via AudioService
-    private async Task StartBgmAsync()
-    {
-        await AudioService.Instance.PlayBgmAsync("game_bgm.mp3");
-    }
-
-    // Stops game BGM via AudioService
-    private void StopBgm()
-    {
-        AudioService.Instance.StopBgm();
-    }
-
-    // Plays SFX using AudioService
-    private async Task PlaySoundAsync(string filename)
-    {
-        await AudioService.Instance.PlaySfxAsync(filename);
-    }
-
-    // Plays warning tick audio
-    private async Task PlayTickSoundAsync()
-    {
-        try
-        {
-            if (tickPlayer != null && tickPlayer.IsPlaying)
-                return;
-
-            StopTickSound();
-
-            using var stream = await FileSystem.OpenAppPackageFileAsync("sfx_tick.mp3");
-            if (stream == null) return;
-
-            tickPlayer = audioManager.CreatePlayer(stream);
-            tickPlayer.Play();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Tick audio failed: {ex.Message}");
-        }
-    }
-
-    // Stops warning tick audio
-    private void StopTickSound()
-    {
-        if (tickPlayer != null)
-        {
-            try
-            {
-                if (tickPlayer.IsPlaying)
-                    tickPlayer.Stop();
-
-                tickPlayer.Dispose();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error disposing tick player: {ex.Message}");
-            }
-            finally
-            {
-                tickPlayer = null;
-            }
-        }
     }
 
     private void LivesLayout_SizeChanged(object? sender, EventArgs e)
@@ -145,36 +73,17 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        AudioService.StopLobbyMusic();
         await StartBattle();
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        StopTickSound();
-        StopBgm();
     }
 
     private async void BattleTimerTick(object? sender, EventArgs e)
     {
         timeRemaining--;
         UpdateTimerLabel();
-
-        int lowTimeThreshold = questionTimeLimit / 3;
-        if (timeRemaining > 0 && timeRemaining <= lowTimeThreshold)
         if (timeRemaining > 0)
         {
-            _ = PlayTickSoundAsync();
-        }
-
-        if (timeRemaining > 0)
             return;
-
-        battleTimer?.Stop();
-        quizTimer.Stop();
-        StopTickSound();
-
+        }
         battleTimer?.Stop();
         quizTimer.Stop();
         ResetScoreMetrics();
@@ -183,11 +92,15 @@ public partial class MainPage : ContentPage
 
     private async Task StartBattle()
     {
-        SetInputControlsEnabled(true);
+        AnswerEntry.IsEnabled = true;
+        foreach (Button button in optionButtons)
+        {
+            button.IsEnabled = true;
+        }
 
         QuestionLoader loader = new QuestionLoader();
         battleQuestions = await loader.LoadQuestionsAsync(GameSettings.SelectedDeckUid);
-        totalDeckCardsCount = battleQuestions.Count; // Cache full deck length
+        totalDeckCardsCount = battleQuestions.Count;
 
         foreach (var q in battleQuestions)
         {
@@ -201,21 +114,6 @@ public partial class MainPage : ContentPage
         }
 
         bossHP = maxBossHP;
-        boss = new Boss
-        {
-            Name = "P e n g u",
-
-            IdleImage = "pengu_idle.png",
-            HurtImage = "pengu_hurt.png",
-            AttackImage = "pengu_attack_peck.png",
-            DefeatedImage = "pengu_hurt.png",
-
-            MaxHp = 100,
-            Hp = 100
-        };
-
-        BossImage.Source = boss.IdleImage;
-
         int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
         if (totalHitsNeeded <= 0) totalHitsNeeded = 1;
         damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
@@ -225,8 +123,8 @@ public partial class MainPage : ContentPage
 
         ResetScoreMetrics();
 
-        questionTimeLimit = GameSettings.TimeLimitSeconds == -1 ? 15 : GameSettings.TimeLimitSeconds;
-        totalMaxTimeAllowed = totalHitsNeeded * questionTimeLimit;
+        int baseTimeLimit = GameSettings.TimeLimitSeconds == -1 ? 15 : GameSettings.TimeLimitSeconds;
+        totalMaxTimeAllowed = totalHitsNeeded * baseTimeLimit;
 
         quizTimer.Reset();
         quizTimer.Start();
@@ -262,17 +160,7 @@ public partial class MainPage : ContentPage
         if (LivesLayout.Width > 0)
             LivesLayout_SizeChanged(LivesLayout, EventArgs.Empty);
 
-        await StartBgmAsync();
-        await NextQuestionAsync();
-    }
-
-    private void SetInputControlsEnabled(bool isEnabled)
-    {
-        AnswerEntry.IsEnabled = isEnabled;
-        foreach (Button button in optionButtons)
-        {
-            button.IsEnabled = isEnabled;
-        }
+        NextQuestion();
     }
 
     private void ResetScoreMetrics()
@@ -285,12 +173,6 @@ public partial class MainPage : ContentPage
 
     private async Task HandleDefeat(string title, string message)
     {
-        StopTickSound();
-        StopBgm();
-        _ = PlaySoundAsync("sfx_defeat.mp3");
-
-        SetInputControlsEnabled(false);
-
         AnswerEntry.IsEnabled = false;
         foreach (Button button in optionButtons)
         {
@@ -320,11 +202,6 @@ public partial class MainPage : ContentPage
 
     private async Task HandleVictory()
     {
-        StopTickSound();
-        StopBgm();
-        _ = PlaySoundAsync("sfx_victory.mp3");
-
-        SetInputControlsEnabled(false);
         AnswerEntry.IsEnabled = false;
         foreach (Button button in optionButtons)
         {
@@ -348,11 +225,6 @@ public partial class MainPage : ContentPage
 
     private async Task HandleNonHardVictoryAsync()
     {
-        StopTickSound();
-        StopBgm();
-        _ = PlaySoundAsync("sfx_victory.mp3");
-
-        SetInputControlsEnabled(false);
         AnswerEntry.IsEnabled = false;
         foreach (Button button in optionButtons)
         {
@@ -433,12 +305,10 @@ public partial class MainPage : ContentPage
 
     private void UpdateMasteryLabel()
     {
-        // Left side display: Cards Left: [cards remaining]/[total cards]
         CardsCountLabel.Text = $"Cards Left: {battleQuestions.Count}/{totalDeckCardsCount}";
 
         if (currentQuestion == null) return;
 
-        // Right side display: Card Mastery: [currentProgress]/[totalNeeded]
         int currentProgress = currentQuestion.CorrectProgress;
         int totalNeeded = GameSettings.CorrectAnswersRequired;
         MasteryLabel.Text = $"Card Mastery: {currentProgress}/{totalNeeded}";
@@ -455,14 +325,12 @@ public partial class MainPage : ContentPage
         TimeLabel.Text = $"TIME: {time:mm\\:ss}";
     }
 
-    private async Task NextQuestionAsync()
+    private void NextQuestion()
     {
-        StopTickSound();
-
         if (battleQuestions.Count == 0 || (!GameSettings.IsZenMode && bossHP <= 0))
         {
             QuestionLabel.Text = "YOU WIN!";
-            SetInputControlsEnabled(false);
+            AnswerEntry.IsEnabled = false;
             battleTimer?.Stop();
             quizTimer.Stop();
 
@@ -479,13 +347,12 @@ public partial class MainPage : ContentPage
 
                 int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
                 baseQuestionsScore += bonusPoints;
-                await DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
 
                 _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
             }
             else
             {
-                await HandleNonHardVictoryAsync();
+                _ = HandleNonHardVictoryAsync();
             }
             return;
         }
@@ -606,8 +473,6 @@ public partial class MainPage : ContentPage
 
     private void OptionClicked(object sender, EventArgs e)
     {
-        _ = AudioService.PlayButtonClickAsync();
-
         Button clickedButton = (Button)sender;
         if (selectedOptions.Contains(clickedButton.Text))
         {
@@ -623,35 +488,18 @@ public partial class MainPage : ContentPage
 
     private async void SubmitAnswer(object sender, EventArgs e)
     {
-        if (isProcessingAnswer || currentQuestion == null)
-            return;
-
-        isProcessingAnswer = true;
-        SetInputControlsEnabled(false);
-
-        try
+        if (currentQuestion == null)
         {
-            _ = AudioService.PlayButtonClickAsync();
+            return;
+        }
 
-            StopTickSound();
-            battleTimer?.Stop();
+        string playerAnswer = AnswerEntry.Text?.Trim() ?? string.Empty;
+        bool isCorrect = false;
 
-            string playerAnswer = AnswerEntry.Text?.Trim() ?? string.Empty;
-            bool isCorrect = false;
-
-            if (currentQuestion.Type == QuestionType.Identification)
+        if (currentQuestion.Type == QuestionType.Identification)
+        {
+            if (string.IsNullOrWhiteSpace(playerAnswer))
             {
-                if (string.IsNullOrWhiteSpace(playerAnswer))
-                {
-                    ResultLabel.Text = "PLEASE ENTER AN ANSWER.";
-                    ResultLabel.TextColor = Colors.Orange;
-                    return;
-                }
-
-                isCorrect = currentQuestion.CorrectAnswers.Any(answer =>
-                    answer.Equals(playerAnswer, StringComparison.OrdinalIgnoreCase));
-            }
-            else if (currentQuestion.Type == QuestionType.MultipleChoice)
                 ResultLabel.Text = "PLEASE ENTER AN ANSWER.";
                 ResultLabel.TextColor = Colors.Orange;
                 return;
@@ -663,60 +511,18 @@ public partial class MainPage : ContentPage
         {
             if (selectedOptions.Count == 0)
             {
-                if (selectedOptions.Count == 0)
-                {
-                    ResultLabel.Text = "PLEASE SELECT AT LEAST ONE ANSWER.";
-                    ResultLabel.TextColor = Colors.Orange;
-                    return;
-                }
-
-                HashSet<string> correctAnswers = new HashSet<string>(
-                    currentQuestion.CorrectAnswers,
-                    StringComparer.OrdinalIgnoreCase);
-
-                isCorrect = selectedOptions.SetEquals(correctAnswers);
+                ResultLabel.Text = "PLEASE SELECT AT LEAST ONE ANSWER.";
+                ResultLabel.TextColor = Colors.Orange;
+                return;
             }
-
-            if (isCorrect)
-            {
-                _ = PlaySoundAsync("sfx_correct.mp3");
-
-                ResultLabel.Text = "CORRECT!";
-                ResultLabel.TextColor = Colors.Green;
             HashSet<string> correctAnswers = new HashSet<string>(
                 currentQuestion.CorrectAnswers,
                 StringComparer.OrdinalIgnoreCase);
             isCorrect = selectedOptions.SetEquals(correctAnswers);
         }
 
-                baseQuestionsScore += 1;
-                if (currentStreak > 0)
-                {
-                    totalStreakBonusEarned += currentStreak;
-                }
-                currentStreak++;
+        battleTimer?.Stop();
 
-                currentQuestion.TimesCorrect++;
-                currentQuestion.CorrectProgress++;
-
-                if (!GameSettings.IsZenMode && bossHP > 0)
-                {
-                    bossHP -= damagePerCorrectAnswer;
-                }
-
-                UpdateMasteryLabel();
-                UpdateLabels();
-
-                if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
-                {
-                    battleQuestions.Remove(currentQuestion);
-                }
-
-                if (battleQuestions.Count == 0 && !GameSettings.IsZenMode)
-                {
-                    bossHP = 0;
-                    UpdateLabels();
-                }
         if (isCorrect)
         {
             ResultLabel.Text = "CORRECT!";
@@ -735,26 +541,13 @@ public partial class MainPage : ContentPage
             if (!GameSettings.IsZenMode && bossHP > 0)
             {
                 bossHP -= damagePerCorrectAnswer;
-                await BossTakeDamage((int)Math.Ceiling(damagePerCorrectAnswer));
             }
-            else
+
+            if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
-                _ = PlaySoundAsync("sfx_incorrect.mp3");
-
-                ResultLabel.Text = "INCORRECT!";
-                ResultLabel.TextColor = Colors.Red;
-
-                currentStreak = 0;
-                totalPenaltiesDeducted += 1;
-                currentQuestion.TimesIncorrect++;
-
-                if (!GameSettings.IsZenMode)
-                {
-                    playerLives--;
-                }
+                battleQuestions.Remove(currentQuestion);
             }
 
-            UpdateLabels();
             UpdateMasteryLabel();
             UpdateLabels();
 
@@ -772,107 +565,39 @@ public partial class MainPage : ContentPage
             totalPenaltiesDeducted += 1;
             currentQuestion.TimesIncorrect++;
 
-            if (!GameSettings.IsZenMode && playerLives <= 0)
+            if (!GameSettings.IsZenMode)
             {
-                quizTimer.Stop();
-                ResetScoreMetrics();
-                await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
-                return;
-            }
-
-            if (!GameSettings.IsZenMode && bossHP <= 0)
-            {
-                await Task.Delay(1000);
-                await NextQuestionAsync();
-                return;
-            }
                 playerLives--;
-                await BossAttack();
             }
 
             UpdateMasteryLabel();
             UpdateLabels();
         }
 
+        if (!GameSettings.IsZenMode && playerLives <= 0)
+        {
+            quizTimer.Stop();
+            ResetScoreMetrics();
+            await HandleDefeat("GAME OVER!", "YOU RAN OUT OF LIVES.");
+            return;
+        }
+
+        if (!GameSettings.IsZenMode && bossHP <= 0)
+        {
             await Task.Delay(1000);
-            await NextQuestionAsync();
-        }
-        finally
-        {
-            isProcessingAnswer = false;
-            SetInputControlsEnabled(true);
-        }
-    }
-
-    // Give Up button event handler
-    private async Task BossTakeDamage(int damage)
-    {
-        boss.Hp -= damage;
-
-        BossImage.Source = boss.HurtImage;
-
-        await ShakeBoss();
-
-        await ShowDamage(damage);
-
-        await Task.Delay(250);
-
-        if (boss.Hp <= 0)
-            BossImage.Source = boss.DefeatedImage;
-        else
-            BossImage.Source = boss.IdleImage;
-    }
-
-    private async Task BossAttack()
-    {
-        BossImage.Source = boss.AttackImage;
-
-        await BossImage.ScaleTo(1.1, 100);
-
-        await BossImage.ScaleTo(1.0, 100);
-
-        await Task.Delay(250);
-
-        BossImage.Source = boss.IdleImage;
-    }
-
-    private async Task ShakeBoss()
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            await BossImage.TranslateTo(-8, 0, 20);
-
-            await BossImage.TranslateTo(8, 0, 20);
+            NextQuestion();
+            return;
         }
 
-        await BossImage.TranslateTo(0, 0, 20);
-    }
-
-    private async Task ShowDamage(int damage)
-    {
-        DamageLabel.Text = "-" + damage;
-
-        DamageLabel.IsVisible = true;
-
-        DamageLabel.TranslationY = 0;
-
-        DamageLabel.Opacity = 1;
-
-        await Task.WhenAll(
-            DamageLabel.TranslateTo(0, -60, 500),
-            DamageLabel.FadeTo(0, 500)
-        );
-
-        DamageLabel.IsVisible = false;
+        await Task.Delay(1000);
+        NextQuestion();
     }
 
     private void OnGiveUpClicked(object? sender, EventArgs e)
     {
-        _ = AudioService.PlayButtonClickAsync();
         OnBackButtonPressed();
     }
 
-    // Handles hardware or software back navigation
     protected override bool OnBackButtonPressed()
     {
         MainThread.BeginInvokeOnMainThread(async () =>
@@ -880,8 +605,6 @@ public partial class MainPage : ContentPage
             bool confirm = await DisplayAlert("BATTLE IN PROGRESS!", "CONFIRM RETURN TO MENU?", "YES", "NO");
             if (confirm)
             {
-                StopTickSound();
-                StopBgm();
                 battleTimer?.Stop();
                 quizTimer.Stop();
                 await Shell.Current.GoToAsync("//MainMenu");
