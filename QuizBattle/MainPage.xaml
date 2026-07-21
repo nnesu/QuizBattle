@@ -39,9 +39,33 @@
                             <Label Text="CURRENT BOSS" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
                             <Label x:Name="BossLabel" Text="BOSS HP: --" TextColor="#F8FAFC" FontSize="22" FontAttributes="Bold" />
                         </VerticalStackLayout>
-                        <Border Grid.Row="0" Grid.Column="1" WidthRequest="48" HeightRequest="48" BackgroundColor="#31265C"
-                                StrokeThickness="0" StrokeShape="RoundRectangle 16">
-                            <Label Text=" " TextColor="#C4B5FD" FontSize="24" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Border
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            WidthRequest="140"
+                            HeightRequest="140"
+                            BackgroundColor="#31265C"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 20">
+
+                            <Grid>
+
+                                <Image
+                                    x:Name="BossImage"
+                                    Source="pengu_idle.png"
+                                    Aspect="AspectFit"/>
+
+                                <Label
+                                    x:Name="DamageLabel"
+                                    IsVisible="False"
+                                    FontSize="32"
+                                    FontAttributes="Bold"
+                                    TextColor="Red"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center"/>
+
+                            </Grid>
+
                         </Border>
                         <BoxView Grid.Row="1" Grid.ColumnSpan="2" HeightRequest="1" Color="#293C5D" />
                         <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*" ColumnSpacing="10">
