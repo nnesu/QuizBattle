@@ -9,6 +9,7 @@ public partial class MainPage : ContentPage
     private readonly Random random = new();
     private List<Question> battleQuestions = new();
     private Question? currentQuestion;
+    private Boss boss = new();
     private double bossHP;
     private double damagePerCorrectAnswer;
     private int playerLives;
@@ -114,6 +115,20 @@ public partial class MainPage : ContentPage
         }
 
         bossHP = maxBossHP;
+
+        // Initialize Boss reaction properties
+        boss = new Boss
+        {
+            Name = "P e n g u",
+            IdleImage = "pengu_idle.png",
+            HurtImage = "pengu_hurt.png",
+            AttackImage = "pengu_attack_peck.png",
+            DefeatedImage = "pengu_hurt.png",
+            MaxHp = 100,
+            Hp = 100
+        };
+        BossImage.Source = boss.IdleImage;
+
         int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
         if (totalHitsNeeded <= 0) totalHitsNeeded = 1;
         damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
@@ -541,6 +556,7 @@ public partial class MainPage : ContentPage
             if (!GameSettings.IsZenMode && bossHP > 0)
             {
                 bossHP -= damagePerCorrectAnswer;
+                await BossTakeDamage((int)Math.Ceiling(damagePerCorrectAnswer));
             }
 
             if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
@@ -568,6 +584,7 @@ public partial class MainPage : ContentPage
             if (!GameSettings.IsZenMode)
             {
                 playerLives--;
+                await BossAttack();
             }
 
             UpdateMasteryLabel();
@@ -591,6 +608,53 @@ public partial class MainPage : ContentPage
 
         await Task.Delay(1000);
         NextQuestion();
+    }
+
+    // --- BOSS REACTION ANIMATION METHODS ---
+    private async Task BossTakeDamage(int damage)
+    {
+        boss.Hp -= damage;
+        BossImage.Source = boss.HurtImage;
+        await ShakeBoss();
+        await ShowDamage(damage);
+        await Task.Delay(250);
+
+        if (boss.Hp <= 0)
+            BossImage.Source = boss.DefeatedImage;
+        else
+            BossImage.Source = boss.IdleImage;
+    }
+
+    private async Task BossAttack()
+    {
+        BossImage.Source = boss.AttackImage;
+        await BossImage.ScaleTo(1.1, 100);
+        await BossImage.ScaleTo(1.0, 100);
+        await Task.Delay(250);
+        BossImage.Source = boss.IdleImage;
+    }
+
+    private async Task ShakeBoss()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            await BossImage.TranslateTo(-8, 0, 20);
+            await BossImage.TranslateTo(8, 0, 20);
+        }
+        await BossImage.TranslateTo(0, 0, 20);
+    }
+
+    private async Task ShowDamage(int damage)
+    {
+        DamageLabel.Text = "-" + damage;
+        DamageLabel.IsVisible = true;
+        DamageLabel.TranslationY = 0;
+        DamageLabel.Opacity = 1;
+        await Task.WhenAll(
+            DamageLabel.TranslateTo(0, -60, 500),
+            DamageLabel.FadeTo(0, 500)
+        );
+        DamageLabel.IsVisible = false;
     }
 
     private void OnGiveUpClicked(object? sender, EventArgs e)
