@@ -30,7 +30,6 @@ public partial class LeaderboardPage : ContentPage
     {
         if (DeckPicker.SelectedIndex == -1) return;
         var selectedDeck = _availableDecks[DeckPicker.SelectedIndex];
-
         var localMastery = await _dbService.GetDeckMasteryAsync(selectedDeck.Id);
         LocalHighScoreLabel.Text = localMastery != null ? $"High Score: {localMastery.HighScore} pts" : "High Score: 0 pts";
 
@@ -39,7 +38,6 @@ public partial class LeaderboardPage : ContentPage
 
         try
         {
-            // ROUTING FIX: Pull session data and pass validation credentials downstream safely
             string userToken = "";
             if (QuizBattle.Helpers.SessionManager.IsLoggedIn())
             {
@@ -64,19 +62,83 @@ public partial class LeaderboardPage : ContentPage
                     Stroke = Color.FromArgb("#2C3A5C"),
                     StrokeThickness = 1,
                     StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-                    Padding = new Thickness(14)
+                    Padding = new Thickness(12, 10)
                 };
 
-                var grid = new Grid { ColumnDefinitions = new ColumnDefinitionCollection { new ColumnDefinition { Width = GridLength.Auto }, new ColumnDefinition { Width = GridLength.Star }, new ColumnDefinition { Width = GridLength.Auto } }, ColumnSpacing = 15 };
+                // 4 Columns Layout: [Rank (#1)] [Avatar Picture] [Player Name] [Score]
+                var grid = new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitionCollection
+                    {
+                        new ColumnDefinition { Width = GridLength.Auto }, // Column 0: Rank (#1)
+                        new ColumnDefinition { Width = GridLength.Auto }, // Column 1: Profile Image
+                        new ColumnDefinition { Width = GridLength.Star }, // Column 2: Name
+                        new ColumnDefinition { Width = GridLength.Auto }  // Column 3: Score
+                    },
+                    ColumnSpacing = 12
+                };
 
-                grid.Children.Add(new Label { Text = $"#{rank}", TextColor = Color.FromArgb("#C4B5FD"), FontSize = 18, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center });
+                // 1. Rank Label
+                var rankLabel = new Label
+                {
+                    Text = $"#{rank}",
+                    TextColor = Color.FromArgb("#C4B5FD"),
+                    FontSize = 16,
+                    FontAttributes = FontAttributes.Bold,
+                    VerticalOptions = LayoutOptions.Center
+                };
+                Grid.SetColumn(rankLabel, 0);
+                grid.Children.Add(rankLabel);
 
-                var nameLabel = new Label { Text = entry.DisplayName, TextColor = Colors.White, FontSize = 16, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
-                Grid.SetColumn(nameLabel, 1);
+                // 2. Circular Profile Image
+                var avatarImg = new Image
+                {
+                    Source = !string.IsNullOrWhiteSpace(entry.PhotoUrl)
+                        ? new UriImageSource { Uri = new Uri(entry.PhotoUrl), CachingEnabled = true }
+                        : "avatar1.png",
+                    WidthRequest = 36,
+                    HeightRequest = 36,
+                    Aspect = Aspect.AspectFill,
+                    VerticalOptions = LayoutOptions.Center
+                };
+
+                var avatarBorder = new Border
+                {
+                    WidthRequest = 36,
+                    HeightRequest = 36,
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
+                    StrokeThickness = 1,
+                    Stroke = Color.FromArgb("#31405F"),
+                    BackgroundColor = Color.FromArgb("#18213C"),
+                    Content = avatarImg,
+                    VerticalOptions = LayoutOptions.Center
+                };
+                Grid.SetColumn(avatarBorder, 1);
+                grid.Children.Add(avatarBorder);
+
+                // 3. Name Label
+                var nameLabel = new Label
+                {
+                    Text = entry.DisplayName,
+                    TextColor = Colors.White,
+                    FontSize = 15,
+                    FontAttributes = FontAttributes.Bold,
+                    VerticalOptions = LayoutOptions.Center,
+                    LineBreakMode = LineBreakMode.TailTruncation
+                };
+                Grid.SetColumn(nameLabel, 2);
                 grid.Children.Add(nameLabel);
 
-                var scoreLabel = new Label { Text = $"{entry.Score} pts", TextColor = Color.FromArgb("#5EEAD4"), FontSize = 16, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
-                Grid.SetColumn(scoreLabel, 2);
+                // 4. Score Label
+                var scoreLabel = new Label
+                {
+                    Text = $"{entry.Score} pts",
+                    TextColor = Color.FromArgb("#5EEAD4"),
+                    FontSize = 15,
+                    FontAttributes = FontAttributes.Bold,
+                    VerticalOptions = LayoutOptions.Center
+                };
+                Grid.SetColumn(scoreLabel, 3);
                 grid.Children.Add(scoreLabel);
 
                 row.Content = grid;
