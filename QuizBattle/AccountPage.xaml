@@ -1,51 +1,220 @@
 <?xml version="1.0" encoding="utf-8" ?>
-
+    
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="QuizBattle.AccountPage">
+    x:Class="QuizBattle.AccountPage"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="#091121">
 
-    <ScrollView>
+    <Grid>
 
-        <VerticalStackLayout
-            Padding="30"
-            Spacing="15">
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#091121" Offset="0"/>
+                <GradientStop Color="#101837" Offset="0.55"/>
+                <GradientStop Color="#0A2133" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
 
-            <Image
-                x:Name="ProfilePicture"
-                Source="dotnet_bot.png"
-                HeightRequest="100"
-                WidthRequest="100"/>        
+        <ScrollView>
 
-            <Label
-                x:Name="DisplayNameLabel"
-                FontSize="24"/>
+            <VerticalStackLayout
+                Padding="28"
+                MaximumWidthRequest="460"
+                Spacing="0">
 
-            <Label
-                x:Name="EmailLabel"/>
+                <!-- HEADER -->
 
-            <Label
-                Text="Status: Signed In"
-                FontSize="16"/>
+                <Label
+                    Text="MY ACCOUNT"
+                    TextColor="#F8FAFC"
+                    FontSize="16"
+                    FontAttributes="Bold"/>
 
-            <Button
-                Text="Change Profile Picture"
-                Clicked="EditPicture_Clicked"/>
+                <Label
+                    Margin="0,2,0,0"
+                    Text="PROFILE &amp; SETTINGS"
+                    TextColor="#8291AF"
+                    FontSize="10"
+                    FontAttributes="Bold"/>
 
-            <Button
-                Text="Edit Details"
-                Clicked="EditDetails_Clicked"/>
+                <Label
+                    Margin="0,28,0,0"
+                    Text="Welcome&#10;back."
+                    TextColor="#F8FAFC"
+                    FontSize="34"
+                    FontAttributes="Bold"
+                    LineHeight="1.06"/>
 
-            <Button
-                Text="Sign Out"
-                Clicked="Logout_Clicked"/>
+                <Label
+                    Margin="0,12,0,0"
+                    Text="Manage your profile, update your details, and personalize your QuizBattle experience."
+                    TextColor="#A9B6CF"
+                    FontSize="15"
+                    LineHeight="1.4"/>
 
-            <Button
-                Text="Delete Account"
-                Clicked="Delete_Clicked"/>
+                <!-- PROFILE CARD -->
 
-        </VerticalStackLayout>
+                <Border
+                    Margin="0,28,0,0"
+                    BackgroundColor="#121D37"
+                    Stroke="#2A3C60"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 22"
+                    Padding="22">
 
-    </ScrollView>
+                    <VerticalStackLayout
+                        Spacing="18"
+                        HorizontalOptions="Center">
+
+                        <Border
+                            WidthRequest="120"
+                            HeightRequest="120"
+                            HorizontalOptions="Center"
+                            Padding="4"
+                            BackgroundColor="#1A2A4A"
+                            Stroke="#304B70"
+                            StrokeThickness="2"
+                            StrokeShape="RoundRectangle 60">
+
+                            <Image
+                                x:Name="ProfilePicture"
+                                Source="avatar1.png"
+                                Aspect="AspectFill"/>
+                        </Border>
+
+                        <Label
+                            x:Name="DisplayNameLabel"
+                            HorizontalTextAlignment="Center"
+                            TextColor="#F8FAFC"
+                            FontSize="26"
+                            FontAttributes="Bold"/>
+
+                        <Label
+                            x:Name="EmailLabel"
+                            HorizontalTextAlignment="Center"
+                            TextColor="#A9B6CF"
+                            FontSize="15"/>
+
+                        <Border
+                            BackgroundColor="#17314A"
+                            Stroke="#2C597B"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="10">
+
+                            <HorizontalStackLayout
+                                HorizontalOptions="Center"
+                                Spacing="8">
+
+                                <Label
+                                    Text="●"
+                                    TextColor="#4ADE80"
+                                    FontSize="16"/>
+
+                                <Label
+                                    Text="SIGNED IN"
+                                    TextColor="#D9FBE3"
+                                    FontSize="13"
+                                    FontAttributes="Bold"/>
+
+                            </HorizontalStackLayout>
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- ACTIONS -->
+
+                <Border
+                    Margin="0,20,0,0"
+                    BackgroundColor="#121D37"
+                    Stroke="#2A3C60"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 22"
+                    Padding="20">
+
+                    <VerticalStackLayout
+                        Spacing="14">
+
+                        <Button
+                            Text="CHANGE PROFILE PICTURE"
+                            Clicked="EditPicture_Clicked"
+                            HeightRequest="54"
+                            BackgroundColor="#8B5CF6"
+                            TextColor="White"
+                            CornerRadius="16"
+                            FontAttributes="Bold"/>
+
+                        <Button
+                            Text="EDIT DISPLAY NAME"
+                            Clicked="EditDetails_Clicked"
+                            HeightRequest="54"
+                            BackgroundColor="#172542"
+                            BorderColor="#304B70"
+                            BorderWidth="1"
+                            TextColor="#F8FAFC"
+                            CornerRadius="16"
+                            FontAttributes="Bold"/>
+
+                        <Button
+                            Text="SIGN OUT"
+                            Clicked="Logout_Clicked"
+                            HeightRequest="54"
+                            BackgroundColor="#1B3558"
+                            BorderColor="#345983"
+                            BorderWidth="1"
+                            TextColor="#D5DDF2"
+                            CornerRadius="16"
+                            FontAttributes="Bold"/>
+
+                        <Button
+                            Text="DELETE ACCOUNT"
+                            Clicked="Delete_Clicked"
+                            HeightRequest="54"
+                            BackgroundColor="#8B1E2D"
+                            TextColor="White"
+                            CornerRadius="16"
+                            FontAttributes="Bold"/>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- INFO -->
+
+                <Border
+                    Margin="0,20,0,20"
+                    BackgroundColor="#122F38"
+                    Stroke="#226B70"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="13">
+
+                    <HorizontalStackLayout
+                        Spacing="10">
+
+                        <Label
+                            Text="✦"
+                            TextColor="#5EEAD4"
+                            FontSize="17"/>
+
+                        <Label
+                            Text="Your profile picture and display name are visible inside QuizBattle leaderboards and multiplayer features."
+                            TextColor="#B5E7E4"
+                            FontSize="12"
+                            LineHeight="1.35"/>
+
+                    </HorizontalStackLayout>
+
+                </Border>
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+    </Grid>
 
 </ContentPage>

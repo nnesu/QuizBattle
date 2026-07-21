@@ -24,7 +24,12 @@ public class FirestoreService
         HttpResponseMessage response = await client.GetAsync(url);
         JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement fields = document.RootElement.GetProperty("fields");
-        return new User { Email = fields.GetProperty("email").GetProperty("stringValue").GetString() ?? "", DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? "No Name", LocalId = localId };
+        return new User { Email = fields.GetProperty("email").GetProperty("stringValue").GetString() ?? "", DisplayName = fields.GetProperty("displayName").GetProperty("stringValue").GetString() ?? "No Name",
+            PhotoUrl =
+            fields.TryGetProperty("photoUrl", out JsonElement photo)
+                ? photo.GetProperty("stringValue").GetString() ?? ""
+                : "",
+            LocalId = localId };
     }
 
     public async Task UpdateDisplayName(string localId, string displayName)
