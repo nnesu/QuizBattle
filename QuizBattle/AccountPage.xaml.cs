@@ -52,6 +52,7 @@ public partial class AccountPage : ContentPage
 
     private async void EditPicture_Clicked(object sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         try
         {
             FileResult? file = await MediaPicker.PickPhotoAsync();
@@ -107,6 +108,7 @@ public partial class AccountPage : ContentPage
         object sender,
         EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         string? result =
             await DisplayPromptAsync(
                 "Display Name",
@@ -138,10 +140,11 @@ public partial class AccountPage : ContentPage
             user.DisplayName;
     }
 
-    private void Logout_Clicked(
+    private async void Logout_Clicked(
         object sender,
         EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         SessionManager.Logout();
 
         // Redirect to a clean login navigation stack upon logout
@@ -154,6 +157,7 @@ public partial class AccountPage : ContentPage
         object sender,
         EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         bool answer =
             await DisplayAlert(
                 "Delete Account",

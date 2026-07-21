@@ -57,7 +57,10 @@ public partial class DecksPage : ContentPage
                 CornerRadius = 18,
                 FontAttributes = FontAttributes.Bold
             };
-            btn.Clicked += (s, e) => ViewDeck(deck);
+            btn.Clicked += async (s, e) => {
+                await AudioService.PlayButtonClickAsync();
+                ViewDeck(deck);
+            };
             cellContainer.Children.Add(btn);
 
             // Side-by-side layout deck configuration tags strip container
@@ -117,18 +120,29 @@ public partial class DecksPage : ContentPage
         LoadCards();
     }
 
-    private void CloseCardsView(object? sender, EventArgs e)
+    private async void CloseCardsView(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         CardsView.IsVisible = false;
         DecksView.IsVisible = true;
         LoadDecks();
     }
 
-    private async void OnBackClicked(object? sender, EventArgs e) => await Navigation.PopAsync();
-    private async void OnSearchGlobalClicked(object sender, EventArgs e) { await Navigation.PushAsync(new SearchDecksPage()); }
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await AudioService.PlayButtonClickAsync();
+        await Navigation.PopAsync();
+    }
+
+    private async void OnSearchGlobalClicked(object sender, EventArgs e)
+    {
+        await AudioService.PlayButtonClickAsync();
+        await Navigation.PushAsync(new SearchDecksPage());
+    }
 
     private async void OnUploadDeckClicked(object sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         if (_currentDeck == null) return;
         if (await DisplayAlert("Publish", $"Upload '{_currentDeck.Name}'?", "YES", "NO"))
         {
@@ -162,7 +176,10 @@ public partial class DecksPage : ContentPage
                 TextColor = Colors.White,
                 CornerRadius = 16
             };
-            cardBtn.Clicked += (s, e) => OpenEditCardPopup(q);
+            cardBtn.Clicked += async (s, e) => {
+                await AudioService.PlayButtonClickAsync();
+                OpenEditCardPopup(q);
+            };
 
             Grid.SetRow(cardBtn, row);
             Grid.SetColumn(cardBtn, col);
@@ -177,12 +194,14 @@ public partial class DecksPage : ContentPage
         }
     }
 
-    public void OpenGenerateCardsPopup(object? sender, EventArgs e)
+    public async void OpenGenerateCardsPopup(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "GENERATE", BackgroundColor = Color.FromArgb("#14B8A6") };
         btn.Clicked += async (s, ev) => {
+            await AudioService.PlayButtonClickAsync();
             string generatedText = await _aiService.GenerateQuestionsAsync(editor.Text, 10);
             string[] lines = generatedText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
@@ -195,12 +214,14 @@ public partial class DecksPage : ContentPage
         ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Paste Material:" }, editor, btn } });
     }
 
-    public void OpenCreateCardPopup(object? sender, EventArgs e)
+    public async void OpenCreateCardPopup(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 80, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "CREATE", BackgroundColor = Color.FromArgb("#8B5CF6") };
         btn.Clicked += async (s, ev) => {
+            await AudioService.PlayButtonClickAsync();
             if (string.IsNullOrWhiteSpace(editor.Text)) return;
             await SaveRawLineToCurrentDeckAsync(editor.Text);
             DismissActivePopup(null, null!);
@@ -209,12 +230,14 @@ public partial class DecksPage : ContentPage
         ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Format: Type|Q|A" }, editor, btn } });
     }
 
-    public void OpenImportPopup(object? sender, EventArgs e)
+    public async void OpenImportPopup(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "IMPORT", BackgroundColor = Color.FromArgb("#A8DADC") };
         btn.Clicked += async (s, ev) => {
+            await AudioService.PlayButtonClickAsync();
             if (string.IsNullOrWhiteSpace(editor.Text)) return;
             string[] lines = editor.Text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
@@ -258,8 +281,9 @@ public partial class DecksPage : ContentPage
         }
     }
 
-    public void OpenExportPopup(object? sender, EventArgs e)
+    public async void OpenExportPopup(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         Task.Run(async () => {
             string contents = await _dbService.ExportDeckToTextAsync(_currentDeck!.Id);
             MainThread.BeginInvokeOnMainThread(() => ShowPopup(new VerticalStackLayout { Children = { new Label { Text = "Export Data:" }, new Editor { Text = contents, IsReadOnly = true, HeightRequest = 150 } } }));
@@ -272,6 +296,7 @@ public partial class DecksPage : ContentPage
         var editor = new Editor { Text = question.Text, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White, IsReadOnly = isReadOnly };
         var saveBtn = new Button { Text = "SAVE", BackgroundColor = Color.FromArgb("#2A9D8F"), IsVisible = !isReadOnly };
         saveBtn.Clicked += async (s, ev) => {
+            await AudioService.PlayButtonClickAsync();
             question.Text = editor.Text;
             await _dbService.SaveQuestionAsync(question);
             DismissActivePopup(null, null!);
@@ -284,12 +309,14 @@ public partial class DecksPage : ContentPage
 
     public async void OnAddNewDeckClicked(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         await _dbService.CreateDeckAsync(await DisplayPromptAsync("NEW DECK", "Name:"));
         LoadDecks();
     }
 
     private async void OnRenameDeckClicked(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         if (_currentDeck == null || _currentDeck.IsReadOnly) return;
         await _dbService.RenameDeckAsync(_currentDeck.Id, await DisplayPromptAsync("RENAME", "New name:", initialValue: _currentDeck.Name) ?? _currentDeck.Name);
         DeckTitleLabel.Text = _currentDeck.Name.ToUpper();
@@ -297,10 +324,16 @@ public partial class DecksPage : ContentPage
 
     private async void OnDeleteDeckClicked(object? sender, EventArgs e)
     {
+        await AudioService.PlayButtonClickAsync();
         await _dbService.DeleteDeckAsync(_currentDeck!.Id);
         CloseCardsView(null, null!);
     }
 
-    private void DismissActivePopup(object? sender, EventArgs e) => PopupBackground.IsVisible = false;
+    private async void DismissActivePopup(object? sender, EventArgs e)
+    {
+        await AudioService.PlayButtonClickAsync();
+        PopupBackground.IsVisible = false;
+    }
+
     private void ShowPopup(View view) { PopupContentStack.Children.Clear(); PopupContentStack.Children.Add(view); PopupBackground.IsVisible = true; }
 }
