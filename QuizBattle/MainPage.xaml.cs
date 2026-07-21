@@ -13,11 +13,12 @@ public partial class MainPage : ContentPage
     private double damagePerCorrectAnswer;
     private int playerLives;
     private int startingLives;
+    private int totalDeckCardsCount = 0; // Stores initial card count for display
 
-    // Trackers for the new score structure
-    private int baseQuestionsScore = 0;   // 1 point per correct answer
-    private int totalStreakBonusEarned = 0;// Accumulated extra points from streaks alone
-    private int totalPenaltiesDeducted = 0;// Total absolute points lost from mistakes
+    // Trackers for score structure
+    private int baseQuestionsScore = 0;
+    private int totalStreakBonusEarned = 0;
+    private int totalPenaltiesDeducted = 0;
     private int currentStreak = 0;
 
     // Time tracking for bonus calculation
@@ -55,15 +56,12 @@ public partial class MainPage : ContentPage
     {
         if (startingLives <= 0 || LivesLayout.Width <= 0)
             return;
-
         double totalSpacing = heartSpacing * Math.Max(0, startingLives - 1);
         double availableWidth = Math.Max(0, LivesLayout.Width - totalSpacing);
         double candidate = availableWidth / startingLives;
         double computed = Math.Clamp(candidate, heartMinSize, heartMaxSize);
-
         if (heartSizeLocked)
             return;
-
         if (Math.Abs(computed - heartSize) > 0.5)
         {
             heartSize = computed;
@@ -82,15 +80,12 @@ public partial class MainPage : ContentPage
     {
         timeRemaining--;
         UpdateTimerLabel();
-
         if (timeRemaining > 0)
         {
             return;
         }
-
         battleTimer?.Stop();
         quizTimer.Stop();
-
         ResetScoreMetrics();
         await HandleDefeat("TIME'S UP!", "YOU RAN OUT OF TIME.");
     }
@@ -105,36 +100,24 @@ public partial class MainPage : ContentPage
 
         QuestionLoader loader = new QuestionLoader();
         battleQuestions = await loader.LoadQuestionsAsync(GameSettings.SelectedDeckUid);
+        totalDeckCardsCount = battleQuestions.Count; // Cache full deck length
 
         foreach (var q in battleQuestions)
         {
             q.CorrectProgress = 0;
         }
 
-        double maxBossHP;
+        double maxBossHP = 100.0;
         if (GameSettings.IsZenMode || GameSettings.CurrentDifficulty == "Zen")
         {
             maxBossHP = -1;
         }
-        else if (GameSettings.CurrentDifficulty == "Easy")
-        {
-            maxBossHP = 100.0;
-        }
-        else if (GameSettings.CurrentDifficulty == "Hard")
-        {
-            maxBossHP = 100.0;
-        }
-        else
-        {
-            maxBossHP = 100.0;
-        }
 
         bossHP = maxBossHP;
-
         int totalHitsNeeded = battleQuestions.Count * GameSettings.CorrectAnswersRequired;
         if (totalHitsNeeded <= 0) totalHitsNeeded = 1;
-
         damagePerCorrectAnswer = maxBossHP / totalHitsNeeded;
+
         playerLives = GameSettings.PlayerLives;
         startingLives = GameSettings.PlayerLives;
 
@@ -195,7 +178,6 @@ public partial class MainPage : ContentPage
         {
             button.IsEnabled = false;
         }
-
         battleTimer?.Stop();
         quizTimer.Stop();
 
@@ -225,7 +207,6 @@ public partial class MainPage : ContentPage
         {
             button.IsEnabled = false;
         }
-
         battleTimer?.Stop();
 
         int subtotal = (baseQuestionsScore + totalStreakBonusEarned) - totalPenaltiesDeducted;
@@ -249,7 +230,6 @@ public partial class MainPage : ContentPage
         {
             button.IsEnabled = false;
         }
-
         battleTimer?.Stop();
 
         bool retry = await DisplayAlert(
@@ -325,10 +305,15 @@ public partial class MainPage : ContentPage
 
     private void UpdateMasteryLabel()
     {
+        // Left side display: Cards Left: [cards remaining]/[total cards]
+        CardsCountLabel.Text = $"Cards Left: {battleQuestions.Count}/{totalDeckCardsCount}";
+
         if (currentQuestion == null) return;
+
+        // Right side display: Card Mastery: [currentProgress]/[totalNeeded]
         int currentProgress = currentQuestion.CorrectProgress;
         int totalNeeded = GameSettings.CorrectAnswersRequired;
-        MasteryLabel.Text = $"Progress: {currentProgress} / {totalNeeded}";
+        MasteryLabel.Text = $"Card Mastery: {currentProgress}/{totalNeeded}";
     }
 
     private void UpdateTimerLabel()
@@ -361,9 +346,10 @@ public partial class MainPage : ContentPage
 
                 double secondsSaved = totalMaxTimeAllowed - totalSecondsSpent;
                 double timeSavedRatio = totalMaxTimeAllowed > 0 ? (secondsSaved / totalMaxTimeAllowed) : 0;
-                int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
 
+                int bonusPoints = (int)Math.Round(preBonusTotal * timeSavedRatio);
                 baseQuestionsScore += bonusPoints;
+
                 _ = DisplayScoreBreakdownAsync(preBonusTotal, totalSecondsSpent, secondsSaved, timeSavedRatio, bonusPoints);
             }
             else
@@ -483,6 +469,7 @@ public partial class MainPage : ContentPage
         baseQuestionsScore = finalScore;
         totalStreakBonusEarned = 0;
         totalPenaltiesDeducted = 0;
+
         await HandleVictory();
     }
 
@@ -519,7 +506,6 @@ public partial class MainPage : ContentPage
                 ResultLabel.TextColor = Colors.Orange;
                 return;
             }
-
             isCorrect = currentQuestion.CorrectAnswers.Any(answer =>
                 answer.Equals(playerAnswer, StringComparison.OrdinalIgnoreCase));
         }
@@ -531,11 +517,9 @@ public partial class MainPage : ContentPage
                 ResultLabel.TextColor = Colors.Orange;
                 return;
             }
-
             HashSet<string> correctAnswers = new HashSet<string>(
                 currentQuestion.CorrectAnswers,
                 StringComparer.OrdinalIgnoreCase);
-
             isCorrect = selectedOptions.SetEquals(correctAnswers);
         }
 
@@ -545,14 +529,14 @@ public partial class MainPage : ContentPage
         {
             ResultLabel.Text = "CORRECT!";
             ResultLabel.TextColor = Colors.Green;
-
             baseQuestionsScore += 1;
+
             if (currentStreak > 0)
             {
                 totalStreakBonusEarned += currentStreak;
             }
-            currentStreak++;
 
+            currentStreak++;
             currentQuestion.TimesCorrect++;
             currentQuestion.CorrectProgress++;
 
@@ -561,13 +545,13 @@ public partial class MainPage : ContentPage
                 bossHP -= damagePerCorrectAnswer;
             }
 
-            UpdateMasteryLabel();
-            UpdateLabels();
-
             if (currentQuestion.CorrectProgress >= GameSettings.CorrectAnswersRequired)
             {
                 battleQuestions.Remove(currentQuestion);
             }
+
+            UpdateMasteryLabel();
+            UpdateLabels();
 
             if (battleQuestions.Count == 0 && !GameSettings.IsZenMode)
             {
@@ -579,7 +563,6 @@ public partial class MainPage : ContentPage
         {
             ResultLabel.Text = "INCORRECT!";
             ResultLabel.TextColor = Colors.Red;
-
             currentStreak = 0;
             totalPenaltiesDeducted += 1;
             currentQuestion.TimesIncorrect++;
@@ -588,9 +571,10 @@ public partial class MainPage : ContentPage
             {
                 playerLives--;
             }
-        }
 
-        UpdateLabels();
+            UpdateMasteryLabel();
+            UpdateLabels();
+        }
 
         if (!GameSettings.IsZenMode && playerLives <= 0)
         {
