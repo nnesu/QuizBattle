@@ -432,7 +432,34 @@ public partial class DecksPage : ContentPage
                     LoadCards();
                 };
 
+                var deleteBtn = new Button
+                {
+                    Text = "DELETE",
+                    BackgroundColor = Color.FromArgb("#C0392B"),
+                    TextColor = Colors.White
+                };
+
+                deleteBtn.Clicked += async (s, ev) =>
+                {
+                    await AudioService.PlayButtonClickAsync();
+
+                    bool confirm = await DisplayAlert(
+                        "DELETE CARD?",
+                        "Are you sure you want to permanently delete this card?\n\nThis action cannot be undone.",
+                        "DELETE",
+                        "CANCEL");
+
+                    if (!confirm)
+                        return;
+
+                    await _dbService.DeleteQuestionAsync(question.Id);
+
+                    DismissActivePopup(null, null!);
+                    LoadCards();
+                };
+
                 layout.Children.Add(saveBtn);
+                layout.Children.Add(deleteBtn);
             }
         }
         else
@@ -466,7 +493,34 @@ public partial class DecksPage : ContentPage
                     LoadCards();
                 };
 
+                var deleteBtn = new Button
+                {
+                    Text = "DELETE",
+                    BackgroundColor = Color.FromArgb("#C0392B"),
+                    TextColor = Colors.White
+                };
+
+                deleteBtn.Clicked += async (s, ev) =>
+                {
+                    await AudioService.PlayButtonClickAsync();
+
+                    bool confirm = await DisplayAlert(
+                        "DELETE CARD?",
+                        "Are you sure you want to permanently delete this card?\n\nThis action cannot be undone.",
+                        "DELETE",
+                        "CANCEL");
+
+                    if (!confirm)
+                        return;
+
+                    await _dbService.DeleteQuestionAsync(question.Id);
+
+                    DismissActivePopup(null, null!);
+                    LoadCards();
+                };
+
                 layout.Children.Add(saveBtn);
+                layout.Children.Add(deleteBtn);
             }
         }
 
