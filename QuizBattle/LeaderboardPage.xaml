@@ -17,7 +17,7 @@
         <VerticalStackLayout Padding="22,22,22,26" Spacing="0" MaximumWidthRequest="650">
             <!-- Header -->
             <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
-                <Button Text=" " Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44"
+                <Button Text="❮" Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44"
                         Padding="0" FontSize="30" BackgroundColor="#17223E"
                         TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
                 <VerticalStackLayout Grid.Column="1" Margin="12,0,12,0" Spacing="1">

@@ -168,13 +168,46 @@ public partial class DecksPage : ContentPage
                 CardsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             }
 
+            string preview;
+
+            if (q.Type.Equals("Identification", StringComparison.OrdinalIgnoreCase))
+            {
+                preview =
+            $@"📝 IDENTIFICATION
+
+            {q.Text}
+
+            ━━━━━━━━━━━━
+            ✔ {q.AnswersRaw}";
+            }
+            else
+            {
+                string[] options = q.OptionsRaw.Split('|');
+
+                preview =
+            $@"☑ MULTIPLE CHOICE
+
+            {q.Text}
+
+            A. {(options.Length > 0 ? options[0] : "")}
+            B. {(options.Length > 1 ? options[1] : "")}
+            C. {(options.Length > 2 ? options[2] : "")}
+            D. {(options.Length > 3 ? options[3] : "")}
+
+            ━━━━━━━━━━━━
+            ✔ {q.AnswersRaw}";
+            }
+
             var cardBtn = new Button
             {
-                Text = q.Text,
-                HeightRequest = 90,
+                Text = preview,
+                HeightRequest = 220,
                 BackgroundColor = Color.FromArgb("#152440"),
                 TextColor = Colors.White,
-                CornerRadius = 16
+                CornerRadius = 16,
+                FontSize = 13,
+                LineBreakMode = LineBreakMode.WordWrap,
+                Padding = new Thickness(12)
             };
             cardBtn.Clicked += async (s, e) => {
                 await AudioService.PlayButtonClickAsync();
@@ -236,14 +269,28 @@ public partial class DecksPage : ContentPage
         if (_currentDeck?.IsReadOnly == true) return;
         var editor = new Editor { HeightRequest = 150, BackgroundColor = Colors.Black, TextColor = Colors.White };
         var btn = new Button { Text = "IMPORT", BackgroundColor = Color.FromArgb("#A8DADC") };
-        btn.Clicked += async (s, ev) => {
+        btn.Clicked += async (s, ev) =>
+        {
             await AudioService.PlayButtonClickAsync();
-            if (string.IsNullOrWhiteSpace(editor.Text)) return;
-            string[] lines = editor.Text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (string.IsNullOrWhiteSpace(editor.Text))
+                return;
+
+            string[] lines = editor.Text
+                .Replace("\r\n", "\n")
+                .Replace("\r", "\n")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            await DisplayAlert(
+                "Debug",
+                $"Import complete! {lines.Length} cards imported.",
+                "OK");
+
             foreach (string line in lines)
             {
                 await SaveRawLineToCurrentDeckAsync(line);
             }
+
             DismissActivePopup(null, null!);
             LoadCards();
         };
@@ -293,17 +340,136 @@ public partial class DecksPage : ContentPage
     private void OpenEditCardPopup(QuestionEntity question)
     {
         bool isReadOnly = _currentDeck?.IsReadOnly ?? false;
-        var editor = new Editor { Text = question.Text, HeightRequest = 100, BackgroundColor = Colors.Black, TextColor = Colors.White, IsReadOnly = isReadOnly };
-        var saveBtn = new Button { Text = "SAVE", BackgroundColor = Color.FromArgb("#2A9D8F"), IsVisible = !isReadOnly };
-        saveBtn.Clicked += async (s, ev) => {
-            await AudioService.PlayButtonClickAsync();
-            question.Text = editor.Text;
-            await _dbService.SaveQuestionAsync(question);
-            DismissActivePopup(null, null!);
-            LoadCards();
+
+        var questionEditor = new Editor
+        {
+            Text = question.Text,
+            HeightRequest = 90,
+            BackgroundColor = Colors.Black,
+            TextColor = Colors.White,
+            IsReadOnly = isReadOnly
         };
-        var layout = new VerticalStackLayout { Children = { new Label { Text = isReadOnly ? "View Card" : "Edit Card" }, editor } };
-        if (!isReadOnly) layout.Children.Add(saveBtn);
+
+        var answerEditor = new Entry
+        {
+            Text = question.AnswersRaw,
+            BackgroundColor = Colors.Black,
+            TextColor = Colors.White,
+            IsReadOnly = isReadOnly
+        };
+
+        var layout = new VerticalStackLayout
+        {
+            Spacing = 10
+        };
+
+        layout.Children.Add(new Label
+        {
+            Text = "Question",
+            TextColor = Colors.White
+        });
+
+        layout.Children.Add(questionEditor);
+
+        if (question.Type.Equals("MultipleChoice", StringComparison.OrdinalIgnoreCase))
+        {
+            string[] options = question.OptionsRaw.Split('|');
+
+            var optionEntries = new List<Entry>();
+
+            for (int i = 0; i < 4; i++)
+            {
+                var entry = new Entry
+                {
+                    Placeholder = $"Option {i + 1}",
+                    Text = i < options.Length ? options[i] : "",
+                    BackgroundColor = Colors.Black,
+                    TextColor = Colors.White,
+                    IsReadOnly = isReadOnly
+                };
+
+                optionEntries.Add(entry);
+
+                layout.Children.Add(new Label
+                {
+                    Text = $"Option {i + 1}",
+                    TextColor = Colors.White
+                });
+
+                layout.Children.Add(entry);
+            }
+
+            layout.Children.Add(new Label
+            {
+                Text = "Correct Answer",
+                TextColor = Colors.White
+            });
+
+            layout.Children.Add(answerEditor);
+
+            if (!isReadOnly)
+            {
+                var saveBtn = new Button
+                {
+                    Text = "SAVE",
+                    BackgroundColor = Color.FromArgb("#2A9D8F")
+                };
+
+                saveBtn.Clicked += async (s, ev) =>
+                {
+                    await AudioService.PlayButtonClickAsync();
+
+                    question.Text = questionEditor.Text;
+
+                    question.OptionsRaw =
+                        $"{optionEntries[0].Text}|{optionEntries[1].Text}|{optionEntries[2].Text}|{optionEntries[3].Text}";
+
+                    question.AnswersRaw = answerEditor.Text;
+
+                    await _dbService.SaveQuestionAsync(question);
+
+                    DismissActivePopup(null, null!);
+                    LoadCards();
+                };
+
+                layout.Children.Add(saveBtn);
+            }
+        }
+        else
+        {
+            layout.Children.Add(new Label
+            {
+                Text = "Answer",
+                TextColor = Colors.White
+            });
+
+            layout.Children.Add(answerEditor);
+
+            if (!isReadOnly)
+            {
+                var saveBtn = new Button
+                {
+                    Text = "SAVE",
+                    BackgroundColor = Color.FromArgb("#2A9D8F")
+                };
+
+                saveBtn.Clicked += async (s, ev) =>
+                {
+                    await AudioService.PlayButtonClickAsync();
+
+                    question.Text = questionEditor.Text;
+                    question.AnswersRaw = answerEditor.Text;
+
+                    await _dbService.SaveQuestionAsync(question);
+
+                    DismissActivePopup(null, null!);
+                    LoadCards();
+                };
+
+                layout.Children.Add(saveBtn);
+            }
+        }
+
         ShowPopup(layout);
     }
 
@@ -317,9 +483,24 @@ public partial class DecksPage : ContentPage
     private async void OnRenameDeckClicked(object? sender, EventArgs e)
     {
         await AudioService.PlayButtonClickAsync();
-        if (_currentDeck == null || _currentDeck.IsReadOnly) return;
-        await _dbService.RenameDeckAsync(_currentDeck.Id, await DisplayPromptAsync("RENAME", "New name:", initialValue: _currentDeck.Name) ?? _currentDeck.Name);
+
+        if (_currentDeck == null || _currentDeck.IsReadOnly)
+            return;
+
+        string? newName = await DisplayPromptAsync(
+            "RENAME",
+            "New name:",
+            initialValue: _currentDeck.Name);
+
+        if (string.IsNullOrWhiteSpace(newName))
+            return;
+
+        await _dbService.RenameDeckAsync(_currentDeck.Id, newName);
+
+        _currentDeck.Name = newName.Trim();
         DeckTitleLabel.Text = _currentDeck.Name.ToUpper();
+
+        LoadDecks(); // optional, refreshes the deck list too
     }
 
     private async void OnDeleteDeckClicked(object? sender, EventArgs e)
