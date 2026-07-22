@@ -31,6 +31,12 @@ public partial class MainPage : ContentPage
     private Button[] optionButtons = Array.Empty<Button>();
     private readonly Color defaultOptionColor = Colors.LightGray;
     private readonly Color selectedOptionColor = Colors.Green;
+    private readonly Color defaultBackground = Color.FromArgb("#1A2644");
+    private readonly Color defaultBorder = Color.FromArgb("#344867");
+
+    private readonly Color selectedBackground = Color.FromArgb("#14B8A6");
+    private readonly Color selectedBorder = Color.FromArgb("#5EEAD4");
+    private readonly Color selectedText = Colors.White;
 
     private IDispatcherTimer? battleTimer;
     private int timeRemaining;
@@ -224,7 +230,7 @@ public partial class MainPage : ContentPage
 
         foreach (Button button in optionButtons)
         {
-            button.BackgroundColor = defaultOptionColor;
+            button.Background = new SolidColorBrush(Color.FromArgb("#17223E")); ;
         }
 
         UpdateLabels();
@@ -481,7 +487,9 @@ public partial class MainPage : ContentPage
 
         foreach (Button button in optionButtons)
         {
-            button.BackgroundColor = defaultOptionColor;
+            button.BackgroundColor = defaultBackground;
+            button.BorderColor = defaultBorder;
+            button.TextColor = Color.FromArgb("#E7EEFC");
         }
 
         ResultLabel.Text = string.Empty;
@@ -573,16 +581,24 @@ public partial class MainPage : ContentPage
     private void OptionClicked(object sender, EventArgs e)
     {
         _ = AudioService.PlayButtonClickAsync();
+
         Button clickedButton = (Button)sender;
+
         if (selectedOptions.Contains(clickedButton.Text))
         {
             selectedOptions.Remove(clickedButton.Text);
-            clickedButton.BackgroundColor = defaultOptionColor;
+
+            clickedButton.BackgroundColor = defaultBackground;
+            clickedButton.BorderColor = defaultBorder;
+            clickedButton.TextColor = Color.FromArgb("#E7EEFC");
         }
         else
         {
             selectedOptions.Add(clickedButton.Text);
-            clickedButton.BackgroundColor = selectedOptionColor;
+
+            clickedButton.BackgroundColor = selectedBackground;
+            clickedButton.BorderColor = selectedBorder;
+            clickedButton.TextColor = selectedText;
         }
     }
 

@@ -16,7 +16,7 @@
         <ScrollView x:Name="DecksView">
             <VerticalStackLayout Padding="22,22,22,28" Spacing="0" MaximumWidthRequest="700">
                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
-                    <Button Text=" " Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="30" BackgroundColor="#17223E" TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+                    <Button Text="❮" Clicked="OnBackClicked" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="30" BackgroundColor="#17223E" TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
                     <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" Spacing="1">
                         <Label Text="MY DECKS" TextColor="#F8FAFC" FontSize="20" FontAttributes="Bold" />
                         <Label Text="BUILD YOUR KNOWLEDGE ARSENAL" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
@@ -31,7 +31,7 @@
         </ScrollView>
         <Grid x:Name="CardsView" IsVisible="False" RowDefinitions="Auto,Auto,*,Auto" Padding="22,22,22,26">
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                <Button Text=" " Clicked="CloseCardsView" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="30" BackgroundColor="#17223E" TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
+                <Button Text="❮" Clicked="CloseCardsView" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="30" BackgroundColor="#17223E" TextColor="#D5DDF2" BorderColor="#304262" BorderWidth="1" CornerRadius="14" />
                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                     <Label Text="DECK WORKSPACE" TextColor="#8291AF" FontSize="10" FontAttributes="Bold" />
                     <Label x:Name="DeckTitleLabel" Text="DECK" TextColor="#F8FAFC" FontSize="22" FontAttributes="Bold" LineBreakMode="TailTruncation" />
