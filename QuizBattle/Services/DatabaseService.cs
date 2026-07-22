@@ -129,37 +129,6 @@ namespace QuizBattle.Services
             }
 
             string[] lines = rawText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-            System.Diagnostics.Debug.WriteLine("========== IMPORT ==========");
-            System.Diagnostics.Debug.WriteLine($"Total Lines: {lines.Length}");
-
-            foreach (string line in lines)
-            {
-                System.Diagnostics.Debug.WriteLine(line);
-
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                string[] parts = line.Split('|');
-
-                System.Diagnostics.Debug.WriteLine($"Parts: {parts.Length}");
-
-                for (int i = 0; i < parts.Length; i++)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[{i}] = '{parts[i]}'");
-                }
-
-                if (parts.Length < 3)
-                {
-                    System.Diagnostics.Debug.WriteLine("Skipped.");
-                    continue;
-                }
-            }
-            System.Diagnostics.Debug.WriteLine("============================");
-        }
-        /* IN CASE SOMETHING HAPPENED TO THE ABOVE CODE, THIS IS THE ORIGINAL VERSION:
-
-        string[] lines = rawText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
@@ -189,8 +158,8 @@ namespace QuizBattle.Services
                     };
                     await SaveQuestionAsync(q);
                 }
-
-        */
+            }
+        }
 
         public async Task<string> ExportDeckToTextAsync(int deckId)
         {
