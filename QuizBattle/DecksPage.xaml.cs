@@ -506,7 +506,20 @@ public partial class DecksPage : ContentPage
     private async void OnDeleteDeckClicked(object? sender, EventArgs e)
     {
         await AudioService.PlayButtonClickAsync();
-        await _dbService.DeleteDeckAsync(_currentDeck!.Id);
+
+        if (_currentDeck == null)
+            return;
+
+        bool confirm = await DisplayAlert(
+            "DELETE DECK?",
+            $"Are you sure you want to permanently delete \"{_currentDeck.Name}\"?\n\nThis will also delete all cards inside the deck. This action cannot be undone.",
+            "DELETE",
+            "CANCEL");
+
+        if (!confirm)
+            return;
+
+        await _dbService.DeleteDeckAsync(_currentDeck.Id);
         CloseCardsView(null, null!);
     }
 
